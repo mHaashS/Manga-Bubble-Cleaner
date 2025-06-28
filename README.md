@@ -55,3 +55,19 @@ Pour les pages avec des bulles simples, le modèle arrive facilement à reconnai
 La tâche se complique un peu quand il s'attaque à des floating_text.
 Surement du au fait qu'il y avait moins de data avec des floating_text.
 ![image2](https://github.com/user-attachments/assets/30997745-2115-4465-b0b0-148027ca5779)
+
+
+## Étape 3 — Nettoyage visuel des bulles
+Une fois que j’étais satisfait de la détection des bulles, j’ai voulu effacer le texte qu’elles contiennent.
+L’objectif ici n’était pas encore d’extraire le texte, mais simplement de vider les bulles pour pouvoir y insérer du texte plus tard.
+
+Plutôt que de supprimer toutes les zones détectées de la même manière, j’ai choisi une approche adaptée au type de bulle :
+- Pour les bulles classiques et les boîtes de narration, j’ai simplement rempli la zone avec une couleur blanche.
+- Pour les floating text (souvent du texte sans contour net), j’ai utilisé une technique qui essaie de reconstruire le fond de l’image en supprimant le texte (inpainting) mais qui n'est pas au point.
+
+Cette étape m’a permis de visualiser une page nettoyée de tout son texte, tout en gardant la structure des bulles intacte
+Cela a été essentiel pour préparer l’insertion future du texte traduit.
+J’ai aussi fixé un seuil de confiance à 75% pour ne nettoyer que les bulles dont le modèle était suffisamment sûr, afin d’éviter d’effacer des parties incorrectes.
+
+![image3](https://github.com/user-attachments/assets/693c22b3-4398-4798-8222-fa7ae7d91cb5)
+![image4](https://github.com/user-attachments/assets/c04343a7-7479-4693-8a9e-76a2465fc467)
