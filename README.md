@@ -1,12 +1,12 @@
 # Manga-Bubble-Cleaner
-Objectif global
+### Objectif global
 Créer un pipeline automatisé pour :
 
 - Détecter les bulles dans des pages de manga (bubbles, narration, floating text)
 - Nettoyer ces bulles (effacement ou inpainting)
 - Extraire le texte original (OCR)
 - Le traduire automatiquement
-- Générer des fichiers .txt qui contient le texte original et traduit (au cas où la traduction automatique est incorrecte)
+- Générer des fichiers .txt qui contient le texte original et traduit (au cas où la traduction automatique est incorrecte ou incomplète)
 - Réinsérer le texte dans l’image
 
 ## Étape 1 — Entraînement du modèle
