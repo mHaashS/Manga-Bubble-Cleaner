@@ -6,11 +6,11 @@ Créer un pipeline automatisé pour :
 - Nettoyer ces bulles (effacement ou inpainting)
 - Extraire le texte original (OCR)
 - Le traduire automatiquement
-- Générer des fichiers .txt qui contient le texte original et traduit (au cas où la traduction automatique est incorrecte ou incomplète)
-- Réinsérer le texte dans l’image
+- Générer des fichiers .txt + .json qui contiennent le texte original et traduit (au cas où la traduction automatique est incorrecte ou incomplète) et la position des bulles
+- Réinsérer le texte dans l’image avec la position dans le json
 
 ## Étape 1 — Entraînement du modèle
-Objectif
+Objectif :
 Détecter automatiquement les bulles dans les pages de manga avec un modèle Mask R-CNN personnalisé.
 
 🧪 Mise en œuvre
@@ -50,10 +50,12 @@ Cela m’a permis de juger rapidement :
 - Et si je pouvais passer à l’étape suivante
 
 Pour les pages avec des bulles simples, le modèle arrive facilement à reconnaitre les bulles.
+
 ![image1](https://github.com/user-attachments/assets/121673fe-a03b-4f78-9d34-e18871854b21)
 
 La tâche se complique un peu quand il s'attaque à des floating_text.
 Surement du au fait qu'il y avait moins de data avec des floating_text.
+
 ![image2](https://github.com/user-attachments/assets/30997745-2115-4465-b0b0-148027ca5779)
 
 
@@ -71,3 +73,60 @@ J’ai aussi fixé un seuil de confiance à 75% pour ne nettoyer que les bulles 
 
 ![image3](https://github.com/user-attachments/assets/693c22b3-4398-4798-8222-fa7ae7d91cb5)
 ![image4](https://github.com/user-attachments/assets/c04343a7-7479-4693-8a9e-76a2465fc467)
+
+## Étape 4 — Extraction du texte + Traduction automatique
+Une fois les bulles détectées sur une page de manga, j’ai automatisé un processus en deux temps :
+🔍 lire le texte présent dans chaque bulle, puis 🌍 le traduire automatiquement en français.
+
+J’ai regroupé ces deux étapes dans un seul script, qui prend une image en entrée et produit un fichier .txt et .json comme sortie.
+
+🧪 Étapes du traitement
+Pour chaque bulle détectée :
+- Extraction de la zone à partir du masque de segmentation
+- Découpage de la zone dans l’image (ROI)
+
+Application d’EasyOCR :
+- OCR robuste, sans prétraitement nécessaire
+- Capable de lire du texte stylisé et irrégulier
+- Résultat brut nettoyé (espaces multiples, retours à la ligne, etc.)
+
+Traduction automatique :
+- Traduction du texte anglais vers le français
+- Réalisée via l’API OpenAI (GPT-3.5)
+- Le texte original et sa traduction sont tous deux enregistrés
+
+Export des résultats :
+- En .txt lisible pour l’utilisateur
+- En .json structuré pour usage automatisé
+  
+![image5](https://github.com/user-attachments/assets/89ffcd4e-02e1-4dfa-bb3c-f1537178c068)
+
+## Étape 5 — Réinsertion du texte traduit dans les bulles
+Après avoir détecté, nettoyé et traduit les bulles de texte dans les pages de manga, l’objectif final est de réinsérer le texte traduit directement dans l’image, à l’endroit même où se trouvait le texte original.
+
+Cette étape transforme réellement le pipeline : on ne se contente plus d’un fichier .txt, mais on recrée une image complète, lisible et localisée.
+
+🎯 Objectif
+- Restaurer une version "localisée" des pages manga
+- Conserver les bulles et l’esthétique d’origine
+- Réutiliser les positions exactes détectées par le modèle
+
+🧪 Démarche mise en place
+Utilisation des coordonnées de chaque bulle
+- Lors de l’étape de détection, chaque bulle est associée à une boîte englobante (x_min, y_min, x_max, y_max)
+- Ces coordonnées sont réutilisées pour déterminer où écrire le texte
+  
+Nettoyage préalable déjà effectué
+- L’image utilisée est celle nettoyée, générée à l’étape 3
+- On y réécrit uniquement les traductions finales
+  
+Choix typographique dynamique
+- En fonction du type de bulle (bubble, floating_text, narration_box), une police, taille ou style différente pourra être utilisée :
+- bubble → police simple et lisible
+- floating_text → plus expressive ou stylisée
+- narration_box → italique, encadrée, ou sobre
+  
+Centrage et ajustement automatique
+- Le texte est centré dans la bulle
+- Si la bulle est trop petite pour une ligne complète, le texte est automatiquement découpé sur plusieurs lignes
+- L’écriture se fait avec PIL.ImageDraw ou cv2.putText, selon l’approche choisie
