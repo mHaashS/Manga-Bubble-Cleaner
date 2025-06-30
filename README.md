@@ -102,31 +102,59 @@ Export des résultats :
 ![image5](https://github.com/user-attachments/assets/89ffcd4e-02e1-4dfa-bb3c-f1537178c068)
 
 ## Étape 5 — Réinsertion du texte traduit dans les bulles
-Après avoir détecté, nettoyé et traduit les bulles de texte dans les pages de manga, l’objectif final est de réinsérer le texte traduit directement dans l’image, à l’endroit même où se trouvait le texte original.
 
-Cette étape transforme réellement le pipeline : on ne se contente plus d’un fichier .txt, mais on recrée une image complète, lisible et localisée.
+Après avoir détecté, nettoyé et traduit les bulles de texte dans les pages de manga, l’objectif final est de **réinsérer automatiquement le texte traduit dans l’image nettoyée**, à l’endroit exact où se trouvait le texte original.
 
-🎯 Objectif
-- Restaurer une version "localisée" des pages manga
-- Conserver les bulles et l’esthétique d’origine
-- Réutiliser les positions exactes détectées par le modèle
+Cette étape transforme réellement le pipeline : on ne se contente plus d’un fichier `.txt`, mais on recrée une **image complète, lisible et localisée**.
 
-🧪 Démarche mise en place
-Utilisation des coordonnées de chaque bulle
-- Lors de l’étape de détection, chaque bulle est associée à une boîte englobante (x_min, y_min, x_max, y_max)
-- Ces coordonnées sont réutilisées pour déterminer où écrire le texte
-  
-Nettoyage préalable déjà effectué
-- L’image utilisée est celle nettoyée, générée à l’étape 3
-- On y réécrit uniquement les traductions finales
-  
-Choix typographique dynamique
-- En fonction du type de bulle (bubble, floating_text, narration_box), une police, taille ou style différente pourra être utilisée :
-- bubble → police simple et lisible
-- floating_text → plus expressive ou stylisée
-- narration_box → italique, encadrée, ou sobre
-  
-Centrage et ajustement automatique
-- Le texte est centré dans la bulle
-- Si la bulle est trop petite pour une ligne complète, le texte est automatiquement découpé sur plusieurs lignes
-- L’écriture se fait avec PIL.ImageDraw ou cv2.putText, selon l’approche choisie
+---
+
+🎯 **Objectif**
+
+- Reconstituer visuellement une version "localisée" des pages manga
+- Préserver les bulles, le fond, et l'esthétique générale
+- Réutiliser les coordonnées des bulles extraites lors de la détection
+
+---
+
+🧪 **Démarche mise en place (script `reinsert_translations.py`)**
+
+1.  **Chargement des données**
+   - Image nettoyée (générée à l’étape 3)
+   - Fichier `.json` contenant les traductions + coordonnées de chaque bulle
+
+2.  **Utilisation des coordonnées de la bulle**
+   - Chaque bulle possède des coordonnées (`x_min`, `y_min`, `x_max`, `y_max`)
+   - Ces données sont utilisées pour **positionner** le texte correctement dans la zone correspondante
+
+3.  **Réinsertion du texte avec centrage automatique**
+   - Le script mesure la largeur/hauteur disponibles
+   - Il ajuste dynamiquement la **taille de la police** pour que le texte tienne dans la bulle
+   - Le texte est centré automatiquement dans l’espace prévu
+
+4.  **Typographie adaptable**
+   - Par défaut, une police classique (`arial.ttf`) est utilisée
+   - Si indisponible, le script bascule sur la police système par défaut
+   - À terme, on pourrait ajuster la police selon le type de bulle
+
+5.  **Export automatique**
+   - L’image finale est sauvegardée sous un nouveau nom (`image_clean_translated.png`)
+   - L’ensemble du processus est automatisé
+
+---
+
+📸 *Exemple visuel : avant / après réinsertion*  
+*(à compléter avec une capture d’image finale localisée)*
+
+---
+
+📦 Technologies utilisées
+- Outil / Librairie	Rôle
+- Python 3.10:	 Langage principal du projet
+- Detectron2: 	Détection des bulles avec Mask R-CNN (https://github.com/matterport/Mask_RCNN)
+- EasyOCR:	Extraction de texte dans les bulles
+- OpenCV: 	Traitement d’images, masquage et nettoyage
+- Pillow (PIL):	Réinsertion du texte dans l’image
+- OpenAI API:	Traduction automatique via GPT-3.5
+- CVAT:	Annotation des données au format COCO
+- json / txt export:	Format de sauvegarde des résultats
