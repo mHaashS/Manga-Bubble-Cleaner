@@ -10,9 +10,15 @@ Créer un pipeline automatisé pour :
 - Réinsérer le texte dans l’image avec la position dans le json
 
 ## Table des matières
-- [Étape 1 — Entraînement du modèle](#Étape-1-—-Entraînement-du-modèle)
-- [Étape 2 — Observation des prédictions du modèle](#Étape-2-—-Observation-des-prédictions-du-modèle)
-- [Étape 3 — Nettoyage visuel des bulles](#Étape-3-—-Nettoyage-visuel-des-bulles)
+
+- [Étape 1 — Entraînement du modèle](#étape-1-entraînement-du-modèle)  
+- [Étape 2 — Observation des prédictions du modèle](#étape-2-observation-des-prédictions-du-modèle)  
+- [Étape 3 — Nettoyage visuel des bulles](#étape-3-nettoyage-visuel-des-bulles)  
+- [Étape 4 — Extraction du texte + Traduction automatique](#étape-4-extraction-du-texte--traduction-automatique)  
+- [Étape 5 — Réinsertion du texte traduit dans les bulles](#étape-5-réinsertion-du-texte-traduit-dans-les-bulles)  
+
+- [Cloner le dépôt](#cloner-le-dépôt)  
+- [Technologies utilisées](#technologies-utilisées)
 
 ## Étape 1 — Entraînement du modèle
 Objectif :
@@ -179,7 +185,7 @@ python scripts/translate_bubble.py path/to/image.png
 python scripts/reinsert_translation.py path/to/image_cleaned.png path/to/.translation.json
 ```
 
-📦 Technologies utilisées
+### Technologies utilisées
 - Outil / Librairie	Rôle
 - Python 3.10:	 Langage principal du projet
 - Detectron2: 	Détection des bulles avec Mask R-CNN (https://github.com/matterport/Mask_RCNN)
