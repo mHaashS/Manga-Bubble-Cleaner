@@ -11,11 +11,13 @@ Créer un pipeline automatisé pour :
 
 ## Table des matières
 
-- [Étape 1 — Entraînement du modèle](#étape-1-entraînement-du-modèle)  
-- [Étape 2 — Observation des prédictions du modèle](#étape-2-observation-des-prédictions-du-modèle)  
-- [Étape 3 — Nettoyage visuel des bulles](#étape-3-nettoyage-visuel-des-bulles)  
-- [Étape 4 — Extraction du texte + Traduction automatique](#étape-4-extraction-du-texte--traduction-automatique)  
-- [Étape 5 — Réinsertion du texte traduit dans les bulles](#étape-5-réinsertion-du-texte-traduit-dans-les-bulles)  
+## Table des matières
+
+- [Étape 1 — Entraînement du modèle](#étape-1--entraînement-du-modèle)  
+- [Étape 2 — Observation des prédictions du modèle](#étape-2--observation-des-prédictions-du-modèle)  
+- [Étape 3 — Nettoyage visuel des bulles](#étape-3--nettoyage-visuel-des-bulles)  
+- [Étape 4 — Extraction du texte + Traduction automatique](étape-4--extraction-du-texte--traduction-automatique)  
+- [Étape 5 — Réinsertion du texte traduit dans les bulles](#étape-5--réinsertion-du-texte-traduit-dans-les-bulles)  
 
 - [Cloner le dépôt](#cloner-le-dépôt)  
 - [Technologies utilisées](#technologies-utilisées)
