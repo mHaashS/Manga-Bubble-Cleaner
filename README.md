@@ -9,6 +9,11 @@ Créer un pipeline automatisé pour :
 - Générer des fichiers .txt + .json qui contiennent le texte original et traduit (au cas où la traduction automatique est incorrecte ou incomplète) et la position des bulles
 - Réinsérer le texte dans l’image avec la position dans le json
 
+## Table des matières
+- [Étape 1 — Entraînement du modèle](#Étape-1-—-Entraînement-du-modèle)
+- [Étape 2 — Observation des prédictions du modèle](#Étape-2-—-Observation-des-prédictions-du-modèle)
+- [Étape 3 — Nettoyage visuel des bulles](#Étape-3-—-Nettoyage-visuel-des-bulles)
+
 ## Étape 1 — Entraînement du modèle
 Objectif :
 Détecter automatiquement les bulles dans les pages de manga avec un modèle Mask R-CNN personnalisé.
@@ -141,11 +146,8 @@ Cette étape transforme réellement le pipeline : on ne se contente plus d’un 
    - L’image finale est sauvegardée sous un nouveau nom (`image_clean_translated.png`)
    - L’ensemble du processus est automatisé
 
----
+![image6](https://github.com/user-attachments/assets/a10993b6-b648-46a8-8412-634be79606f5)
 
-📸 *Exemple visuel : avant / après réinsertion*  
-
----
 
 ### Cloner le dépôt
 
