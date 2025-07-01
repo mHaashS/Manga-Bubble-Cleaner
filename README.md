@@ -144,9 +144,35 @@ Cette étape transforme réellement le pipeline : on ne se contente plus d’un 
 ---
 
 📸 *Exemple visuel : avant / après réinsertion*  
-*(à compléter avec une capture d’image finale localisée)*
 
 ---
+
+### Cloner le dépôt
+
+```bash
+# Clonez le repo
+git clone https://github.com/mHaashS/Manga-Bubble-Cleaner.git
+
+# Placez-vous dans le dossier
+cd Manga-Bubble-Cleaner
+
+python -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+mkdir -p models
+curl -L https://github.com/mHaashS/Manga-Bubble-Cleaner/releases/latest/download/model_final.pth \
+     -o models/model_final.pth
+
+# Clean Bubbles
+python scripts/clean_bubbles.py path/to/image.png
+
+# Translate Bubbles
+python scripts/translate_bubble.py path/to/image.png
+
+# Reinsert Translation
+python scripts/reinsert_translation.py path/to/image_cleaned.png path/to/.translation.json
+```
 
 📦 Technologies utilisées
 - Outil / Librairie	Rôle
