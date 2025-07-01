@@ -1,0 +1,7 @@
+torch
+detectron2
+easyocr
+opencv-python
+numpy
+Pillow
+openai

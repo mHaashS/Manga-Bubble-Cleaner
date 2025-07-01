@@ -1,0 +1,11 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+
+# Environnements virtuels
+venv*/
+
+# Données lourdes
+/data/
+/manga_screenshots/
+/output/
