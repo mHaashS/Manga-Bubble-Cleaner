@@ -159,7 +159,10 @@ cd Manga-Bubble-Cleaner
 python -m venv venv
 source venv/bin/activate
 
+# Install requirements
 pip install -r requirements.txt
+
+# Install models
 mkdir -p models
 curl -L https://github.com/mHaashS/Manga-Bubble-Cleaner/releases/latest/download/model_final.pth \
      -o models/model_final.pth
