@@ -20,8 +20,8 @@ Créer un pipeline automatisé pour :
 
 1. **Cloner le repository**
 ```bash
-git clone <repository-url>
-cd Project-Bubble-Cleaner
+git clone https://github.com/mHaashS/Manga-Bubble-Cleaner.git
+cd Manga-Bubble-Cleaner
 ```
 
 2. **Créer un environnement virtuel**
@@ -192,6 +192,16 @@ output/
 ├── final/           # Images finales avec texte traduit
 └── logs/            # Fichiers de logs
 ```
+
+## 📋 Table des matières
+
+- [Étape 1 — Entraînement du modèle](#étape-1--entraînement-du-modèle)  
+- [Étape 2 — Observation des prédictions du modèle](#étape-2--observation-des-prédictions-du-modèle)  
+- [Étape 3 — Nettoyage visuel des bulles](#étape-3--nettoyage-visuel-des-bulles)  
+- [Étape 4 — Extraction du texte + Traduction automatique](#étape-4--extraction-du-texte--traduction-automatique)  
+- [Étape 5 — Réinsertion du texte traduit dans les bulles](#étape-5--réinsertion-du-texte-traduit-dans-les-bulles)  
+- [Cloner le dépôt](#cloner-le-dépôt)  
+- [Technologies utilisées](#technologies-utilisées)
 
 ## 📋 Étape 1 — Entraînement du modèle
 Objectif :
@@ -387,14 +397,40 @@ Cette étape transforme réellement le pipeline : on ne se contente plus d’un 
    - L’image finale est sauvegardée sous un nouveau nom (`image_clean_translated.png`)
    - L’ensemble du processus est automatisé
 
----
+![image6](https://github.com/user-attachments/assets/a10993b6-b648-46a8-8412-634be79606f5)
 
-📸 *Exemple visuel : avant / après réinsertion*  
-*(à compléter avec une capture d’image finale localisée)*
 
----
+### Cloner le dépôt
 
-📦 Technologies utilisées
+```bash
+# Clonez le repo
+git clone https://github.com/mHaashS/Manga-Bubble-Cleaner.git
+
+# Placez-vous dans le dossier
+cd Manga-Bubble-Cleaner
+
+python -m venv venv
+source venv/bin/activate
+
+# Install requirements
+pip install -r requirements.txt
+
+# Install models
+mkdir -p models
+curl -L https://github.com/mHaashS/Manga-Bubble-Cleaner/releases/latest/download/model_final.pth \
+     -o models/model_final.pth
+
+# Clean Bubbles
+python scripts/clean_bubbles.py path/to/image.png
+
+# Translate Bubbles
+python scripts/translate_bubble.py path/to/image.png
+
+# Reinsert Translation
+python scripts/reinsert_translation.py path/to/image_cleaned.png path/to/.translation.json
+```
+
+### Technologies utilisées
 - Outil / Librairie	Rôle
 - Python 3.10:	 Langage principal du projet
 - Detectron2: 	Détection des bulles avec Mask R-CNN (https://github.com/matterport/Mask_RCNN)
