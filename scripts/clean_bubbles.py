@@ -2,9 +2,13 @@ import os
 import cv2
 import torch
 import numpy as np
+import logging
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 from detectron2 import model_zoo
+
+# Configuration du logging
+logger = logging.getLogger(__name__)
 
 # === CONFIGURATION DES CHEMINS ===
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +55,7 @@ def clean_bubbles(image, outputs):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 2:
-        print("Usage : python clean_bubbles.py chemin/image.jpg")
+        logger.error("Usage : python clean_bubbles.py chemin/image.jpg")
         sys.exit(1)
 
     image_path = sys.argv[1]
@@ -63,4 +67,4 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     save_path = os.path.join(output_dir, f"cleaned_{os.path.basename(image_path)}")
     cv2.imwrite(save_path, cleaned)
-    print(f"Image nettoyée enregistrée : {save_path}")
+    logger.info(f"Image nettoyée enregistrée : {save_path}")

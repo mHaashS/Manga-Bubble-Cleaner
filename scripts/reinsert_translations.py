@@ -3,71 +3,197 @@ import sys
 import json
 import cv2
 import numpy as np
+import logging
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
+from pathlib import Path
 
-def draw_translated_text(image_path, json_path, output_path, font_path="arial.ttf"):
-    # Chargement image
-    image = cv2.imread(image_path)
-    if image is None:
-        print(f"❌ Impossible de charger l'image : {image_path}")
-        return
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    img_pil = Image.fromarray(image_rgb)
-    draw = ImageDraw.Draw(img_pil)
+# Patch de compatibilité pour Pillow >= 10.0
+if not hasattr(Image, "Resampling"):
+    # Pour compatibilité Pillow < 10
+    Image.Resampling = Image
+if not hasattr(Image, "LANCZOS"):
+    # Remplacer ANTIALIAS par LANCZOS si nécessaire
+    Image.LANCZOS = Image.ANTIALIAS if hasattr(Image, "ANTIALIAS") else Image.Resampling.LANCZOS
 
-    # Police
+# Configuration du logging
+logger = logging.getLogger(__name__)
+
+def find_font():
+    """Trouve une police disponible sur le système"""
+    font_paths = [
+        "fonts/animeace2_bld.ttf",
+        "fonts/animeace2_reg.ttf", 
+        "fonts/animeace2_ital.ttf",
+        "arial.ttf",
+        "Arial.ttf",
+        "/System/Library/Fonts/Arial.ttf",  # macOS
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+        "C:/Windows/Fonts/arial.ttf"  # Windows
+    ]
+    
+    for path in font_paths:
+        if os.path.exists(path):
+            return path
+    
+    return None
+
+def wrap_text(text, font, max_width):
+    """Enveloppe le texte pour qu'il tienne dans la largeur donnée"""
+    words = text.split()
+    lines = []
+    current_line = []
+    
+    for word in words:
+        test_line = ' '.join(current_line + [word])
+        bbox = font.getbbox(test_line)
+        line_width = bbox[2] - bbox[0]
+        
+        if line_width <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+            else:
+                # Si un seul mot est trop long, le couper
+                lines.append(word)
+                current_line = []
+    
+    if current_line:
+        lines.append(' '.join(current_line))
+    
+    return lines
+
+def draw_text_on_image(image, bubble_data, text):
+    """Dessine le texte sur l'image à la position de la bulle"""
     try:
-        font = ImageFont.truetype(font_path, size=24)
-    except:
-        font = ImageFont.load_default()
-        print("⚠️ Police 'arial.ttf' non trouvée. Police par défaut utilisée.")
-
-    # Chargement JSON
-    with open(json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    for r in data:
-        if not all(k in r for k in ["translated_text", "index", "confidence"]):
-            continue
-
-        # Vérifie et calcule bounding box si manquante
-        if not all(k in r for k in ["x_min", "x_max", "y_min", "y_max"]):
-            print(f"⚠️ Bulle {r['index']} n’a pas de coordonnées. Tu dois les ajouter lors de la détection.")
-            continue
-
-        text = r["translated_text"]
-        x_min, x_max, y_min, y_max = r["x_min"], r["x_max"], r["y_min"], r["y_max"]
-
-        # Ajustement dynamique de la taille de police
+        # Convertir l'image OpenCV en PIL
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(image_rgb)
+        draw = ImageDraw.Draw(img_pil)
+        
+        # Obtenir les coordonnées de la bulle
+        x_min = int(bubble_data.get('x_min', 0))
+        y_min = int(bubble_data.get('y_min', 0))
+        x_max = int(bubble_data.get('x_max', 0))
+        y_max = int(bubble_data.get('y_max', 0))
+        
+        # Calculer les dimensions de la bulle
         box_width = x_max - x_min
         box_height = y_max - y_min
+        
+        # Marges pour éviter que le texte touche les bords
+        margin_x = int(box_width * 0.15)  # 15% de marge
+        margin_y = int(box_height * 0.15)  # 15% de marge
+        available_width = box_width - (2 * margin_x)
+        available_height = box_height - (2 * margin_y)
+        
+        # Charger la police
+        font_path = find_font()
+        if font_path:
+            logger.info(f"OK: Police chargee: {os.path.basename(font_path)}")
+        else:
+            logger.warning("ATTENTION: Police non trouvee, utilisation de la police par defaut")
+        
+        # Taille de police par défaut
+        font_size = bubble_data.get('font_size', 16)
+        
+        # Charger la police
+        try:
+            if font_path:
+                font = ImageFont.truetype(font_path, font_size)
+            else:
+                font = ImageFont.load_default()
+        except Exception as e:
+            logger.error(f"ERREUR: Impossible de charger la police: {e}")
+            font = ImageFont.load_default()
+        
+        # Envelopper le texte
+        wrapped_lines = wrap_text(text, font, available_width)
+        
+        # Calculer la position de départ pour centrer verticalement
+        line_height = font.getbbox("Ay")[3]
+        total_text_height = len(wrapped_lines) * line_height
+        start_y = y_min + margin_y + (available_height - total_text_height) // 2
+        
+        # Dessiner chaque ligne
+        for i, line in enumerate(wrapped_lines):
+            # Calculer la largeur de cette ligne pour centrer horizontalement
+            bbox = font.getbbox(line)
+            line_width = bbox[2] - bbox[0]
+            line_x = x_min + margin_x + (available_width - line_width) // 2
+            line_y = start_y + (i * line_height)
+            
+            # Dessiner le texte en noir
+            draw.text((line_x, line_y), line, font=font, fill=(0, 0, 0))
+        
+        # Convertir de PIL vers OpenCV
+        final_img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+        return final_img
+        
+    except Exception as e:
+        logger.error(f"ERREUR lors du dessin du texte: {e}")
+        return image
 
-        font_size = 24
-        while True:
-            font = ImageFont.truetype(font_path, font_size)
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            if text_width <= box_width * 0.9 and text_height <= box_height * 0.9:
-                break
-            font_size -= 1
-            if font_size < 10:
-                break
-
-        # Position du texte centré
-        text_x = x_min + (box_width - text_width) // 2
-        text_y = y_min + (box_height - text_height) // 2
-
-        draw.text((text_x, text_y), text, font=font, fill=(0, 0, 0))
-
-    # Sauvegarde
-    final_img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
-    cv2.imwrite(output_path, final_img)
-    print(f"✅ Image enregistrée : {output_path}")
+def draw_translated_text(image_path, json_path, output_path):
+    """Dessine le texte traduit sur l'image nettoyée"""
+    try:
+        # Charger l'image
+        image = cv2.imread(image_path)
+        if image is None:
+            logger.error(f"ERREUR: Impossible de charger l'image : {image_path}")
+            return False
+        
+        logger.info(f"OK: Image chargee: {image_path}")
+        
+        # Charger les traductions
+        with open(json_path, 'r', encoding='utf-8') as f:
+            translations = json.load(f)
+        
+        logger.info(f"OK: {len(translations)} bulles chargees")
+        
+        # Dessiner chaque texte traduit
+        for i, bubble_data in enumerate(translations):
+            translated_text = bubble_data.get('translated_text', '')
+            if not translated_text:
+                continue
+            
+            # Obtenir les coordonnées de la bulle
+            x_min = int(bubble_data.get('x_min', 0))
+            y_min = int(bubble_data.get('y_min', 0))
+            x_max = int(bubble_data.get('x_max', 0))
+            y_max = int(bubble_data.get('y_max', 0))
+            
+            # Calculer la taille de police basée sur la taille de la bulle
+            bubble_width = x_max - x_min
+            bubble_height = y_max - y_min
+            font_size = min(bubble_width // 10, bubble_height // 2, 72)  # Limiter à 72pt max
+            font_size = max(font_size, 8)  # Minimum 8pt
+            
+            # Charger la police
+            font_path = find_font()
+            if font_path:
+                logger.info(f"OK: Police chargee: {os.path.basename(font_path)}")
+            else:
+                logger.warning("ATTENTION: Police non trouvee, utilisation de la police par defaut")
+            
+            # Dessiner le texte
+            image = draw_text_on_image(image, bubble_data, translated_text)
+        
+        # Sauvegarder l'image finale
+        cv2.imwrite(output_path, image)
+        logger.info(f"OK: Image enregistree : {output_path}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"ERREUR lors de la reinsertion: {e}")
+        return False
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage : python reinsert_translations.py chemin/image_clean.png chemin/image.json")
+        logger.error("Usage : python reinsert_translations.py chemin/image_clean.png chemin/image.json")
         sys.exit(1)
 
     image_path = sys.argv[1]

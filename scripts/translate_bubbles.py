@@ -6,10 +6,26 @@ import json
 import numpy as np
 import easyocr
 import openai
+import logging
+
+# Patch de compatibilité pour Pillow >= 10.0 (utilisé par easyocr)
+try:
+    from PIL import Image
+    if not hasattr(Image, "Resampling"):
+        # Pour compatibilité Pillow < 10
+        Image.Resampling = Image
+    if not hasattr(Image, "LANCZOS"):
+        # Remplacer ANTIALIAS par LANCZOS si nécessaire
+        Image.LANCZOS = Image.ANTIALIAS if hasattr(Image, "ANTIALIAS") else Image.Resampling.LANCZOS
+except ImportError:
+    pass
 
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 from detectron2 import model_zoo
+
+# Configuration du logging
+logger = logging.getLogger(__name__)
 
 # === CONFIGURATION DETECTRON2 ===
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,7 +45,38 @@ CLASS_NAMES = {0: "bubble", 1: "floating_text", 2: "narration_box"}
 CONFIDENCE_THRESHOLD = 0.75
 
 # === OPENAI (nouvelle API) ===
-client = openai.OpenAI(api_key="YOUR_API_KEY_HERE")
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("OPENAI_API_KEY environment variable is required")
+
+# Initialisation du client OpenAI avec gestion d'erreur robuste
+def create_openai_client():
+    """Crée un client OpenAI avec gestion d'erreur pour compatibilité"""
+    try:
+        # Essai standard
+        return openai.OpenAI(api_key=api_key)
+    except TypeError as e:
+        if "proxies" in str(e):
+            # Fallback 1: sans http_client
+            try:
+                return openai.OpenAI(api_key=api_key, http_client=None)
+            except:
+                pass
+        # Fallback 2: avec paramètres minimaux
+        try:
+            return openai.OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
+        except:
+            pass
+        # Fallback 3: approche alternative
+        try:
+            import httpx
+            return openai.OpenAI(api_key=api_key, http_client=httpx.Client())
+        except:
+            pass
+        # Si rien ne marche, on lève l'erreur originale
+        raise e
+
+client = create_openai_client()
 
 def translate(text):
     if not text.strip():
@@ -40,11 +87,20 @@ def translate(text):
             messages=[
                 {"role": "system", "content": "Tu es un traducteur automatique. Ne commente jamais. Donne uniquement la traduction française brute du texte fourni."},
                 {"role": "user", "content": f"Traduis ce texte en français : {text}"}
-            ]
+            ],
+            max_tokens=150,
+            temperature=0.3
         )
         return response.choices[0].message.content.strip()
+    except openai.AuthenticationError:
+        logger.error("ERREUR: Erreur d'authentification OpenAI. Verifiez votre cle API.")
+        return f"[ERREUR: Clé API invalide]"
+    except openai.RateLimitError:
+        logger.error("ERREUR: Limite de taux depassee. Attendez avant de reessayer.")
+        return f"[ERREUR: Limite de taux]"
     except Exception as e:
-        return f"[ERREUR DE TRADUCTION: {e}]"
+        logger.error(f"ERREUR: Erreur de traduction: {e}")
+        return f"[ERREUR DE TRADUCTION: {str(e)}]"
 
 def clean_ocr(text):
     return text.replace("\n", " ").replace("  ", " ").strip()
@@ -74,8 +130,8 @@ def extract_and_translate(image, outputs):
         ocr_text = extract_text_easyocr(roi)
         ocr_text = clean_ocr(ocr_text)
 
-        print(f"→ BULLE {i+1}: {class_name}, confidence={score:.2f}")
-        print(f"   OCR : {ocr_text}")
+        logger.info(f"-> BULLE {i+1}: {class_name}, confidence={score:.2f}")
+        logger.info(f"   OCR : {ocr_text}")
 
         if ocr_text.strip() == "":
             continue
@@ -95,6 +151,88 @@ def extract_and_translate(image, outputs):
         })
     return results
 
+def extract_and_translate_with_edited_bulles(image_path, edited_bulles):
+    """Extrait et traduit le texte des bulles modifiées"""
+    import cv2
+    import numpy as np
+    
+    # Charger l'image
+    image = cv2.imread(image_path)
+    if image is None:
+        logger.error(f"ERREUR: Impossible de charger l'image: {image_path}")
+        return []
+    
+    results = []
+    
+    for i, bulle in enumerate(edited_bulles):
+        try:
+            # Extraire les points du polygone
+            if "points" not in bulle:
+                logger.warning(f"⚠️ Bulle {i+1} n'a pas de points, ignorée")
+                continue
+                
+            points = bulle["points"]
+            if not points:
+                logger.warning(f"⚠️ Bulle {i+1} a une liste de points vide, ignorée")
+                continue
+            
+            # Convertir les points en coordonnées numpy
+            coords = np.array([[int(p["x"]), int(p["y"])] for p in points], dtype=np.int32)
+            
+            # Calculer les bounding box
+            x_coords = [p["x"] for p in points]
+            y_coords = [p["y"] for p in points]
+            x_min, x_max = int(min(x_coords)), int(max(x_coords))
+            y_min, y_max = int(min(y_coords)), int(max(y_coords))
+            
+            # Créer un masque pour la région d'intérêt
+            mask = np.zeros(image.shape[:2], dtype=np.uint8)
+            cv2.fillPoly(mask, [coords], 255)
+            
+            # Extraire la région d'intérêt
+            roi = image[y_min:y_max, x_min:x_max]
+            if roi.size == 0:
+                logger.warning(f"⚠️ Bulle {i+1} a une région d'intérêt vide")
+                continue
+            
+            # Appliquer le masque à la ROI
+            roi_mask = mask[y_min:y_max, x_min:x_max]
+            roi_masked = cv2.bitwise_and(roi, roi, mask=roi_mask)
+            
+            # Extraire le texte avec EasyOCR
+            ocr_text = extract_text_easyocr(roi_masked)
+            ocr_text = clean_ocr(ocr_text)
+            
+            confidence = bulle.get("confidence", 0.8)  # Valeur par défaut si pas de confidence
+            
+            logger.info(f"-> BULLE {i+1}: confidence={confidence:.2f}")
+            logger.info(f"   OCR : {ocr_text}")
+            
+            if ocr_text.strip() == "":
+                logger.info(f"   ⚠️ Aucun texte détecté dans la bulle {i+1}")
+                continue
+            
+            # Traduire le texte
+            translated_text = translate(ocr_text)
+            
+            results.append({
+                "index": len(results) + 1,
+                "class": "bubble",
+                "confidence": float(confidence),
+                "ocr_text": ocr_text,
+                "translated_text": translated_text,
+                "x_min": int(x_min),
+                "x_max": int(x_max),
+                "y_min": int(y_min),
+                "y_max": int(y_max)
+            })
+            
+        except Exception as e:
+            logger.error(f"ERREUR: Erreur lors du traitement de la bulle {i+1}: {e}")
+            continue
+    
+    return results
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage : python translate_bubbles_easyocr.py chemin/image.jpg")
@@ -108,7 +246,7 @@ if __name__ == "__main__":
 
     print(f"🧾 Nombre de résultats à sauvegarder : {len(results)}")
     if not results:
-        print("❌ Aucun résultat à sauvegarder.")
+        print("ERREUR: Aucun resultat a sauvegarder.")
         sys.exit(0)
 
     output_dir = os.path.join(PROJECT_DIR, "output", "translations")
@@ -126,4 +264,4 @@ if __name__ == "__main__":
     with open(json_path, "w", encoding="utf-8") as jf:
         json.dump(results, jf, ensure_ascii=False, indent=2)
 
-    print(f"✅ Traductions enregistrées dans :\n→ {txt_path}\n→ {json_path}")
+    print(f"OK: Traductions enregistrees dans :\n-> {txt_path}\n-> {json_path}")
