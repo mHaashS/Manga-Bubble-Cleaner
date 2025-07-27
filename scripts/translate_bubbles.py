@@ -7,6 +7,7 @@ import numpy as np
 import easyocr
 import openai
 import logging
+from pathlib import Path
 
 # Patch de compatibilité pour Pillow >= 10.0 (utilisé par easyocr)
 try:
@@ -42,7 +43,13 @@ predictor = DefaultPredictor(cfg)
 reader = easyocr.Reader(['en'], gpu=True)
 
 CLASS_NAMES = {0: "bubble", 1: "floating_text", 2: "narration_box"}
-CONFIDENCE_THRESHOLD = 0.75
+# Import de la configuration hybride
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+from config import OCR_CONFIG, OPENAI_CONFIG
+
+# Utilise la configuration centralisée
+CONFIDENCE_THRESHOLD = OCR_CONFIG["confidence_threshold"]
 
 # === OPENAI (nouvelle API) ===
 api_key = os.getenv("OPENAI_API_KEY")

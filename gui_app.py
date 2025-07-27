@@ -204,14 +204,11 @@ class BubbleCleanerGUI:
         """Récupère la liste des fichiers d'images dans un dossier"""
         if not folder_path or not folder_path.exists():
             return []
-        
         image_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif'}
         image_files = []
-        
         for file_path in folder_path.iterdir():
             if file_path.is_file() and file_path.suffix.lower() in image_extensions:
                 image_files.append(file_path)
-        
         return image_files
     
     def init_batch_processor(self):
@@ -242,28 +239,23 @@ class BubbleCleanerGUI:
                 def __init__(self, gui_instance):
                     super().__init__()
                     self.gui = gui_instance
-                
                 def emit(self, record):
                     try:
                         msg = self.format(record)
                         self.gui.log_queue.put(msg)
                     except Exception as e:
                         print(f"Erreur dans GUILogHandler: {e}")
-            
             # Configurer le logging
             logging.basicConfig(
                 level=logging.INFO,
                 format='[%(asctime)s] %(levelname)s: %(message)s',
                 datefmt='%H:%M:%S'
             )
-            
             # Ajouter notre handler personnalisé
             gui_handler = GUILogHandler(self)
             gui_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s', '%H:%M:%S'))
             logging.getLogger().addHandler(gui_handler)
-            
             print("✅ Logging configuré avec succès")
-            
         except Exception as e:
             print(f"❌ Erreur lors de la configuration du logging: {e}")
             # Continuer sans redirection si ça échoue
@@ -473,29 +465,9 @@ class BubbleCleanerGUI:
         processing_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
         processing_frame.columnconfigure(0, weight=1)
         
-        # Mode de traitement
-        mode_frame = ttk.Frame(processing_frame)
-        mode_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
-        mode_frame.columnconfigure(0, weight=1)
-        
-        ttk.Label(mode_frame, text="Mode de traitement:", font=('Arial', 9, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
-        
-        # Variables pour les modes
-        self.processing_mode = tk.StringVar(value="single")
-        
-        # Boutons radio pour le mode
-        mode_radio_frame = ttk.Frame(mode_frame)
-        mode_radio_frame.grid(row=1, column=0, sticky=(tk.W, tk.E))
-        mode_radio_frame.columnconfigure(0, weight=1)
-        mode_radio_frame.columnconfigure(1, weight=1)
-        
-        single_radio = ttk.Radiobutton(mode_radio_frame, text="🎯 Traitement unique (avec bulles modifiées)", 
-                                      variable=self.processing_mode, value="single")
-        single_radio.grid(row=0, column=0, sticky=tk.W, padx=(0, 20))
-        
-        batch_radio = ttk.Radiobutton(mode_radio_frame, text="🔄 Traitement par lots", 
-                                     variable=self.processing_mode, value="batch")
-        batch_radio.grid(row=0, column=1, sticky=tk.W)
+        # Info utilisateur
+        info_label = ttk.Label(processing_frame, text="Sélectionnez une image OU un dossier, puis lancez le traitement :", font=('Arial', 9, 'italic'))
+        info_label.grid(row=0, column=0, sticky=tk.W, pady=(0, 10))
         
         # Boutons d'action
         action_buttons_frame = ttk.Frame(processing_frame)
@@ -506,19 +478,19 @@ class BubbleCleanerGUI:
         
         # Bouton Pipeline Complet
         complete_btn = ttk.Button(action_buttons_frame, text="🔄 Pipeline Complet", 
-                                 command=self.run_selected_pipeline, width=20)
+                                 command=self.run_batch_pipeline, width=20)
         complete_btn.grid(row=0, column=0, padx=(0, 10))
         
         # Bouton Nettoyage Seulement
         clean_btn = ttk.Button(action_buttons_frame, text="🧹 Nettoyage Seulement", 
-                              command=lambda: self.run_selected_pipeline(clean_only=True), width=20)
+                              command=lambda: self.run_batch_pipeline(clean_only=True), width=20)
         clean_btn.grid(row=0, column=1, padx=(0, 10))
         
         # Bouton Traduction Seulement
         translate_btn = ttk.Button(action_buttons_frame, text="🌐 Traduction Seulement", 
-                                 command=lambda: self.run_selected_pipeline(translate_only=True), width=20)
-        translate_btn.grid(row=0, column=2)
-        
+                                 command=lambda: self.run_batch_pipeline(translate_only=True), width=20)
+        translate_btn.grid(row=0, column=2, padx=(0, 10))
+
         # Boutons d'action supplémentaires
         action_buttons_frame2 = ttk.Frame(processing_frame)
         action_buttons_frame2.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
@@ -1200,27 +1172,53 @@ class BubbleCleanerGUI:
     #     """Nettoie les bulles en utilisant les données modifiées de l'éditeur (temporairement désactivé)"""
     #     pass
     
-    def run_batch_processing(self):
-        """Lance le traitement par lots"""
-        if not self.current_folder:
-            messagebox.showwarning("Attention", "Veuillez d'abord sélectionner un dossier d'images.")
+    def run_batch_pipeline(self, clean_only=False, translate_only=False):
+        """Lance le pipeline sur un fichier ou un dossier (toujours mode batch)"""
+        chemin = self.current_image or self.current_folder
+        if not chemin:
+            messagebox.showwarning("Attention", "Veuillez sélectionner une image ou un dossier avant de lancer le traitement.")
             return
-        
-        if not self.output_dir:
-            messagebox.showwarning("Attention", "Veuillez d'abord sélectionner un dossier de sortie.")
+        # Si c'est un fichier, on crée une liste avec un seul élément
+        if os.path.isfile(chemin):
+            images = [chemin]
+        elif os.path.isdir(chemin):
+            images = self.get_image_files_from_folder(chemin)
+            if not images:
+                messagebox.showwarning("Attention", "Aucune image trouvée dans le dossier sélectionné.")
+                return
+        else:
+            messagebox.showwarning("Attention", "Sélection invalide.")
             return
-        
-        # Lancer le traitement par lots
-        self.log_message("🔄 Mode: Traitement par lots")
-        self.log_message(f"Dossier sélectionné: {len(self.get_image_files_from_folder(self.current_folder))} images trouvées")
-        
+        # Désactiver les boutons pendant l'exécution
+        self.disable_buttons()
+        # Lancer le pipeline dans un thread
+        thread = threading.Thread(
+            target=self._run_batch_pipeline_thread,
+            args=(images, clean_only, translate_only),
+            daemon=True
+        )
+        thread.start()
+
+    def _run_batch_pipeline_thread(self, images, clean_only, translate_only):
+        """Exécute le pipeline sur la liste d'images (toujours mode batch)"""
+        from scripts.main_pipeline import run_pipeline
+        start_time = time.time()
         try:
-            from scripts.batch_processor import process_folder
-            process_folder(str(self.current_folder), str(self.output_dir))
-            self.log_message("✅ Traitement par lots terminé")
+            total = len(images)
+            for i, image_path in enumerate(images, 1):
+                self.log_message(f"➡️ Traitement de {image_path} ({i}/{total})")
+                run_pipeline(str(image_path), str(self.output_dir), clean_only, translate_only)
+                progress_info = {
+                    'progress': int(i * 100 / total),
+                    'current_image': str(image_path),
+                    'elapsed_time': time.time() - start_time
+                }
+                self.update_batch_progress(progress_info)
+            self.log_message("✅ Traitement terminé pour toutes les images.")
         except Exception as e:
-            self.log_message(f"❌ Erreur lors du traitement par lots: {e}")
-            messagebox.showerror("Erreur", f"Erreur lors du traitement par lots: {e}")
+            self.log_message(f"❌ Erreur lors du traitement : {e}")
+        finally:
+            self.enable_buttons()
     
     def launch_text_editor(self):
         """Lance l'éditeur de texte (détecte automatiquement le mode)"""
@@ -1324,7 +1322,7 @@ class BubbleCleanerGUI:
                 # Aucune sélection ou sélection multiple
                 messagebox.showwarning("Attention", 
                     "Veuillez sélectionner soit une image unique, soit un dossier d'images.")
-                
+            
         except Exception as e:
             self.log_message(f"❌ Erreur lors du lancement de l'éditeur: {e}")
             messagebox.showerror("Erreur", f"Erreur lors du lancement de l'éditeur: {e}")
@@ -1335,7 +1333,6 @@ def main():
     try:
         root = TkinterDnD.Tk()
         app = BubbleCleanerGUI(root)
-        
         # Gestion de la fermeture
         def on_closing():
             if messagebox.askokcancel("Quitter", "Êtes-vous sûr de vouloir quitter ?"):
@@ -1343,9 +1340,7 @@ def main():
                 if hasattr(app, 'log_thread') and app.log_thread.is_alive():
                     app.log_thread.join(timeout=1)
                 root.destroy()
-        
         root.protocol("WM_DELETE_WINDOW", on_closing)
-        
         # Centrer la fenêtre
         root.update_idletasks()
         width = root.winfo_width()
@@ -1353,7 +1348,6 @@ def main():
         x = (root.winfo_screenwidth() // 2) - (width // 2)
         y = (root.winfo_screenheight() // 2) - (height // 2)
         root.geometry(f"{width}x{height}+{x}+{y}")
-        
         root.mainloop()
     except Exception as e:
         print(f"❌ Erreur lors du lancement de l'interface: {e}")

@@ -82,7 +82,7 @@ def draw_text_on_image(image, bubble_data, text):
         # Calculer les dimensions de la bulle
         box_width = x_max - x_min
         box_height = y_max - y_min
-        
+
         # Marges pour éviter que le texte touche les bords
         margin_x = int(box_width * 0.15)  # 15% de marge
         margin_y = int(box_height * 0.15)  # 15% de marge
@@ -102,7 +102,7 @@ def draw_text_on_image(image, bubble_data, text):
         # Charger la police
         try:
             if font_path:
-                font = ImageFont.truetype(font_path, font_size)
+            font = ImageFont.truetype(font_path, font_size)
             else:
                 font = ImageFont.load_default()
         except Exception as e:
@@ -127,9 +127,9 @@ def draw_text_on_image(image, bubble_data, text):
             
             # Dessiner le texte en noir
             draw.text((line_x, line_y), line, font=font, fill=(0, 0, 0))
-        
+
         # Convertir de PIL vers OpenCV
-        final_img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+    final_img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
         return final_img
         
     except Exception as e:

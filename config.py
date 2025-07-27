@@ -5,42 +5,37 @@ Configuration centralisée pour le projet Bubble Cleaner
 import os
 from pathlib import Path
 
+# Configuration technique avec valeurs par défaut
+# Variables d'environnement optionnelles pour surcharger
+
 # Chemins du projet
 PROJECT_ROOT = Path(__file__).parent
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 MODELS_DIR = PROJECT_ROOT / "models"
-OUTPUT_DIR = PROJECT_ROOT / "output"
+OUTPUT_DIR = PROJECT_ROOT / os.getenv("OUTPUT_DIR", "output")
 DATA_DIR = PROJECT_ROOT / "data"
 
 # Configuration du modèle Detectron2
 DETECTRON_CONFIG = {
     "config_file": "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml",
     "model_weights": str(MODELS_DIR / "model_final.pth"),
-    "score_threshold": 0.5,
-    "num_classes": 3,
+    "score_threshold": float(os.getenv("MODEL_CONFIDENCE_THRESHOLD", "0.75")),
     "device": "cuda" if os.getenv("USE_CUDA", "true").lower() == "true" else "cpu"
-}
-
-# Configuration des classes
-CLASS_NAMES = {
-    0: "bubble",
-    1: "floating_text", 
-    2: "narration_box"
 }
 
 # Configuration OCR
 OCR_CONFIG = {
     "languages": ["en"],
-    "gpu": True,
-    "confidence_threshold": 0.75
+    "gpu": os.getenv("USE_CUDA", "true").lower() == "true",
+    "confidence_threshold": float(os.getenv("OCR_CONFIDENCE_THRESHOLD", "0.75"))
 }
 
-# Configuration OpenAI
+# Configuration OpenAI (clé API depuis .env)
 OPENAI_CONFIG = {
-    "model": "gpt-3.5-turbo",
-    "max_tokens": 150,
-    "temperature": 0.3,
-    "system_prompt": "Tu es un traducteur automatique. Ne commente jamais. Donne uniquement la traduction française brute du texte fourni."
+    "api_key": os.getenv("OPENAI_API_KEY", ""),  # Secret obligatoire
+    "model": os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+    "max_tokens": int(os.getenv("OPENAI_MAX_TOKENS", "1000")),
+    "temperature": float(os.getenv("OPENAI_TEMPERATURE", "0.3"))
 }
 
 # Configuration du nettoyage
@@ -66,12 +61,31 @@ TEXT_INSERTION_CONFIG = {
     ]
 }
 
+# Configuration des polices
+FONT_CONFIG = {
+    "anime_fonts": [
+        "fonts/animeace2_bld.ttf",
+        "fonts/animeace2_reg.ttf", 
+        "fonts/animeace2_ital.ttf"
+    ],
+    "fallback_fonts": [
+        "fonts/animeace.ttf",
+        "fonts/animeace2.ttf"
+    ]
+}
+
+# Configuration des couleurs
+COLOR_CONFIG = {
+    "bubble_color": (255, 255, 255),  # Blanc
+    "text_color": (0, 0, 0),          # Noir
+    "highlight_color": (255, 255, 0)   # Jaune
+}
+
 # Configuration des répertoires de sortie
 OUTPUT_CONFIG = {
     "cleaned_dir": OUTPUT_DIR / "cleaned",
-    "translations_dir": OUTPUT_DIR / "translations", 
-    "final_dir": OUTPUT_DIR / "final",
-    "logs_dir": OUTPUT_DIR / "logs"
+    "translated_dir": OUTPUT_DIR / "translated",
+    "final_dir": OUTPUT_DIR / "final"
 }
 
 # Création automatique des répertoires
