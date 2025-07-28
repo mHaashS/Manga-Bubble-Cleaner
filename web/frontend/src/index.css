@@ -1,0 +1,7 @@
+html, body {
+  background: radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%) !important;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+} 
