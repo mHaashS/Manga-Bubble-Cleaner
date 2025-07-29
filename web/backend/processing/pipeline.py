@@ -5,6 +5,7 @@ import traceback
 from .clean_bubbles import clean_bubbles, predictor as clean_predictor
 from .translate_bubbles import extract_and_translate, predictor as translate_predictor
 from .reinsert_translations import draw_translated_text
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +57,31 @@ def process_image_pipeline(image_bytes: bytes) -> bytes:
         traceback.print_exc()
         # En cas d'erreur, retourner l'image originale
         return image_bytes 
+
+def process_image_pipeline_with_bubbles(image_bytes: bytes):
+    """
+    Pipeline complet qui retourne l'image traitée, l'image nettoyée ET la liste des bulles (texte, coordonnées, etc.)
+    """
+    try:
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if image is None:
+            logger.error("Impossible de décoder l'image")
+            return image_bytes, [], None
+        logger.info("Début du pipeline de traitement (with bubbles)")
+        outputs = clean_predictor(image)
+        cleaned_image = clean_bubbles(image, outputs)
+        translations = extract_and_translate(image, outputs)
+        if translations:
+            final_image = draw_translated_text(cleaned_image, translations)
+        else:
+            final_image = cleaned_image
+        _, buffer_final = cv2.imencode('.png', final_image)
+        result_bytes = buffer_final.tobytes()
+        _, buffer_cleaned = cv2.imencode('.png', cleaned_image)
+        cleaned_base64 = base64.b64encode(buffer_cleaned.tobytes()).decode('utf-8')
+        return result_bytes, translations, cleaned_base64
+    except Exception as e:
+        logger.error(f"Erreur dans le pipeline: {e}")
+        traceback.print_exc()
+        return image_bytes, [], None 

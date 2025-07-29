@@ -15,7 +15,18 @@ function App() {
   const [editImageUrl, setEditImageUrl] = useState(null);
   const [editImageSize, setEditImageSize] = useState({width: 0, height: 0});
   const [editCleanedUrl, setEditCleanedUrl] = useState(null);
+  const [initialAdjustmentDone, setInitialAdjustmentDone] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const canvasRef = useRef(null);
+
+  // Appliquer le mode dark/light au body
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
 
   const handleFileChange = (e) => {
     const selected = Array.from(e.target.files);
@@ -118,7 +129,7 @@ function App() {
             newImages[i].bubbles = data.bubbles.map(b => ({
               ocrText: b.ocr_text,
               translatedText: b.translated_text,
-              fontSize: 24,
+              fontSize: 14,
               x_min: b.x_min,
               x_max: b.x_max,
               y_min: b.y_min,
@@ -148,11 +159,21 @@ function App() {
   const openEditModal = (img, idx) => {
     setEditIdx(idx);
     setCurrentBubbleIdx(0);
-    setEditBubbles(img.bubbles ? img.bubbles.map(b => ({...b})) : []);
+    const bubbles = img.bubbles ? img.bubbles.map(b => ({...b})) : [];
+    setEditBubbles(bubbles);
     setEditImageUrl(img.cleanedUrl || img.result.url);
     setEditCleanedUrl(img.cleanedUrl || null);
     setEditImageSize({width: img.width, height: img.height});
     setEditModalOpen(true);
+    setInitialAdjustmentDone(false);
+    
+    // Ajuster automatiquement toutes les tailles de police à la première ouverture
+    setTimeout(() => {
+      if (!initialAdjustmentDone) {
+        bubbles.forEach((_, index) => autoAdjustFontSize(index));
+        setInitialAdjustmentDone(true);
+      }
+    }, 100);
   };
   const closeEditModal = () => {
     setEditModalOpen(false);
@@ -161,6 +182,7 @@ function App() {
     setEditBubbles([]);
     setEditImageUrl(null);
     setEditImageSize({width: 0, height: 0});
+    setInitialAdjustmentDone(false);
   };
   // Met à jour le texte traduit en temps réel
   const handleBubbleTextChange = (val) => {
@@ -310,33 +332,76 @@ function App() {
   // Met à jour la preview en temps réel dans la popin
   useEffect(() => {
     if (!editModalOpen || !editCleanedUrl || !editBubbles.length) return;
-    const img = new window.Image();
-    img.onload = function() {
-      const canvas = canvasRef.current;
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      // Dessiner toutes les bulles (pour voir le rendu global)
-      editBubbles.forEach((bulle, idx) => {
-        const x = (bulle.x_min + bulle.x_max) / 2;
-        const y = (bulle.y_min + bulle.y_max) / 2;
-        const maxWidth = Math.max(10, bulle.x_max - bulle.x_min - 10); // marges
-        const fontSize = bulle.fontSize || 24;
-        const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
-        const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
-        wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
-      });
-      // Optionnel : dessiner un rectangle autour de la bulle sélectionnée
-      const bulle = editBubbles[currentBubbleIdx];
-      ctx.save();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(bulle.x_min, bulle.y_min, bulle.x_max-bulle.x_min, bulle.y_max-bulle.y_min);
-      ctx.restore();
-    };
-    img.src = editCleanedUrl;
+    
+    // Forcer le chargement de la police avant de dessiner
+    const testFont = new FontFace('Anime Ace', 'url(./fonts/animeace2_reg.ttf)');
+    testFont.load().then(() => {
+      document.fonts.add(testFont);
+      
+      const img = new window.Image();
+      img.onload = function() {
+        const canvas = canvasRef.current;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        // Dessiner toutes les bulles (pour voir le rendu global)
+        editBubbles.forEach((bulle, idx) => {
+          const x = (bulle.x_min + bulle.x_max) / 2;
+          const y = (bulle.y_min + bulle.y_max) / 2;
+          // Utiliser les mêmes marges que dans calculateOptimalFontSize (10%)
+          const bubbleWidth = bulle.x_max - bulle.x_min;
+          const marginX = bubbleWidth * 0.1;
+          const maxWidth = bubbleWidth - (2 * marginX);
+          const fontSize = bulle.fontSize || 24;
+          const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
+          const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
+          wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
+        });
+        // Optionnel : dessiner un rectangle autour de la bulle sélectionnée
+        const bulle = editBubbles[currentBubbleIdx];
+        ctx.save();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(bulle.x_min, bulle.y_min, bulle.x_max-bulle.x_min, bulle.y_max-bulle.y_min);
+        ctx.restore();
+      };
+      img.src = editCleanedUrl;
+    }).catch(() => {
+      // Fallback si la police ne peut pas être chargée
+      const img = new window.Image();
+      img.onload = function() {
+        const canvas = canvasRef.current;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        // Dessiner toutes les bulles (pour voir le rendu global)
+        editBubbles.forEach((bulle, idx) => {
+          const x = (bulle.x_min + bulle.x_max) / 2;
+          const y = (bulle.y_min + bulle.y_max) / 2;
+          // Utiliser les mêmes marges que dans calculateOptimalFontSize (10%)
+          const bubbleWidth = bulle.x_max - bulle.x_min;
+          const marginX = bubbleWidth * 0.1;
+          const maxWidth = bubbleWidth - (2 * marginX);
+          const fontSize = bulle.fontSize || 24;
+          const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
+          const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
+          wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
+        });
+        // Optionnel : dessiner un rectangle autour de la bulle sélectionnée
+        const bulle = editBubbles[currentBubbleIdx];
+        ctx.save();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(bulle.x_min, bulle.y_min, bulle.x_max-bulle.x_min, bulle.y_max-bulle.y_min);
+        ctx.restore();
+      };
+      img.src = editCleanedUrl;
+    });
   }, [editModalOpen, editCleanedUrl, editBubbles, currentBubbleIdx]);
+
+
 
   // Fonction pour gérer le clic sur le canvas
   const handleCanvasClick = (event) => {
@@ -398,10 +463,101 @@ function App() {
 
   const progress = images.length === 0 ? 0 : (images.filter(img => img.status === 'terminée' || img.status === 'erreur').length / images.length) * 100;
 
+  // Fonction pour toggle le mode dark/light
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  // Fonction intelligente pour calculer la taille de police
+  const calculateSmartFontSize = (text, bubble) => {
+    if (!text || !text.trim()) return 14;
+    
+    const bubbleWidth = bubble.x_max - bubble.x_min;
+    const bubbleHeight = bubble.y_max - bubble.y_min;
+    
+    // Calculer la longueur du texte
+    const textLength = text.length;
+    
+    // Base de calcul selon la longueur du texte
+    let baseSize = 16; // Taille de base
+    
+    if (textLength <= 10) {
+      baseSize = 20; // Texte court = police plus grande
+    } else if (textLength <= 20) {
+      baseSize = 18; // Texte moyen
+    } else if (textLength <= 30) {
+      baseSize = 16; // Texte long
+    } else if (textLength <= 50) {
+      baseSize = 14; // Très long texte
+    } else {
+      baseSize = 12; // Texte très long
+    }
+    
+    // Calculer le facteur basé sur les dimensions de la bulle
+    // Plus la bulle est grande, plus on peut utiliser une grande police
+    const minDimension = Math.min(bubbleWidth, bubbleHeight);
+    const maxDimension = Math.max(bubbleWidth, bubbleHeight);
+    
+    // Facteur basé sur la plus petite dimension (hauteur pour les bulles hautes, largeur pour les bulles larges)
+    let dimensionFactor = minDimension / 50; // Normaliser par rapport à 50px
+    
+    // Ajuster selon le ratio largeur/hauteur
+    const ratio = bubbleWidth / bubbleHeight;
+    if (ratio > 2) {
+      // Bulle très large, réduire un peu
+      dimensionFactor *= 0.8;
+    } else if (ratio < 0.5) {
+      // Bulle très haute, réduire un peu
+      dimensionFactor *= 0.8;
+    }
+    
+    let finalSize = Math.round(baseSize * dimensionFactor);
+    
+    // Limites de sécurité
+    finalSize = Math.max(8, Math.min(32, finalSize));
+    
+    console.log(`Calcul intelligent pour "${text}":`, {
+      textLength: textLength,
+      bubbleSize: { width: bubbleWidth, height: bubbleHeight },
+      ratio: ratio,
+      minDimension: minDimension,
+      dimensionFactor: dimensionFactor,
+      baseSize: baseSize,
+      finalSize: finalSize
+    });
+    
+    return finalSize;
+  };
+
+  // Fonction pour ajuster automatiquement la taille de police
+  const autoAdjustFontSize = (bubbleIndex) => {
+    if (!editBubbles[bubbleIndex]) return;
+    
+    const bubble = editBubbles[bubbleIndex];
+    const text = bubble.translatedText || bubble.ocrText || '';
+    
+    if (!text.trim()) return;
+    
+    const smartSize = calculateSmartFontSize(text, bubble);
+    
+    const newBubbles = [...editBubbles];
+    newBubbles[bubbleIndex].fontSize = smartSize;
+    setEditBubbles(newBubbles);
+  };
+
   return (
-    <div className="app-bg">
-      <div className="main-card">
-        <h1 className="main-title">Bubble Translate</h1>
+    <div className={`app-bg ${darkMode ? 'dark-mode' : ''}`}>
+      <div className={`main-card ${darkMode ? 'dark-mode' : ''}`}>
+        <div className="header-container">
+          <h1 className="main-title">Bubble Translate</h1>
+          <button 
+            className="theme-toggle" 
+            onClick={toggleDarkMode}
+            title={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
+          >
+            {darkMode ? "☀️" : "🌙"}
+          </button>
+        </div>
         <p className="subtitle">Uploadez vos pages, nettoyez et traduisez les bulles en un clic.</p>
         <form className="upload-form" onSubmit={handleProcessAll}>
           <div
@@ -574,9 +730,9 @@ function App() {
                 rows={6}
                 style={{ width: '100%', borderRadius: 8, border: '1.5px solid #a78bfa', padding: 10, fontSize: 16, resize: 'vertical', marginBottom: 8 }}
               />
-              <div style={{marginBottom: 8}}>
-                <label style={{color: '#6366f1', fontWeight: 500, marginRight: 8}}>Taille police :</label>
-                <input type="number" min={10} max={80} value={editBubbles[currentBubbleIdx]?.fontSize || 24} onChange={e => handleFontSizeChange(e.target.value)} style={{width: 70, borderRadius: 6, border: '1.5px solid #a78bfa', padding: 4, fontSize: 15}} />
+              <div style={{marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8}}>
+                <label style={{color: '#6366f1', fontWeight: 500}}>Taille police :</label>
+                <input type="number" min={8} max={80} value={editBubbles[currentBubbleIdx]?.fontSize || 14} onChange={e => handleFontSizeChange(e.target.value)} style={{width: 70, borderRadius: 6, border: '1.5px solid #a78bfa', padding: 4, fontSize: 15}} />
               </div>
               <div style={{display: 'flex', gap: 8, marginTop: 12}}>
                 <button className="btn-outline btn-outline-sm" onClick={goToPrevBubble} disabled={currentBubbleIdx === 0}>◀ Précédente</button>

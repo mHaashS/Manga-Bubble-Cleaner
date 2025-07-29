@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 def find_font():
     """Trouve une police disponible sur le système"""
     font_paths = [
-        "fonts/animeace2_bld.ttf",
-        "fonts/animeace2_reg.ttf", 
+        "fonts/animeace2_reg.ttf",  # Regular en premier
+        "fonts/animeace2_bld.ttf",  # Bold en second
         "fonts/animeace2_ital.ttf",
         "arial.ttf",
         "Arial.ttf",
@@ -94,8 +94,8 @@ def draw_text_on_image(image, bubble_data, text):
         else:
             logger.warning("ATTENTION: Police non trouvee, utilisation de la police par defaut")
         
-        # Taille de police par défaut
-        font_size = bubble_data.get('font_size', 16)
+        # Taille de police par défaut (gérer les deux formats)
+        font_size = bubble_data.get('font_size', bubble_data.get('fontSize', 16))
         
         # Charger la police
         try:
@@ -141,7 +141,8 @@ def draw_translated_text(image, translations):
         
         # Dessiner chaque texte traduit
         for i, bubble_data in enumerate(translations):
-            translated_text = bubble_data.get('translated_text', '')
+            # Gérer les deux formats possibles (backend et frontend)
+            translated_text = bubble_data.get('translated_text', bubble_data.get('translatedText', ''))
             if not translated_text:
                 continue
             
