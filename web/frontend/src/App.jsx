@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import './App.css';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 function App() {
   const [files, setFiles] = useState([]);
@@ -447,6 +449,24 @@ function App() {
     document.body.removeChild(link);
   };
 
+  // Téléchargement de toutes les images dans un zip
+  const handleDownloadAllZip = async () => {
+    const zip = new JSZip();
+    const folder = zip.folder('images');
+    for (let img of images) {
+      if (img.status === 'terminée' && img.result) {
+        let url = img.previewUrl || img.result.url;
+        let response = await fetch(url);
+        let blob = await response.blob();
+        let ext = img.file.name.split('.').pop();
+        let name = img.file.name.replace(/\.[^.]+$/, '');
+        folder.file(`${name}.png`, blob); // On force png pour la cohérence
+      }
+    }
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, 'images_bubble_cleaner.zip');
+  };
+
   const handleDeleteImage = (idx) => {
     setFiles(files.filter((_, i) => i !== idx));
     setImages(images.filter((_, i) => i !== idx));
@@ -587,6 +607,12 @@ function App() {
           >
             {processing ? <span className="loader"></span> : `Traiter ${files.length > 1 ? 'les images' : "l'image"}`}
           </button>
+          {/* Affichage du bouton ZIP uniquement si au moins une image traitée */}
+          {images.some(img => img.status === 'terminée') && (
+            <button className="btn-primary btn-outline-sm" style={{marginTop: 12}} type="button" onClick={handleDownloadAllZip}>
+              ⬇ Télécharger tout (ZIP)
+            </button>
+          )}
         </form>
         {globalError && <div className="alert-error">{globalError}</div>}
         {images.length > 0 && (

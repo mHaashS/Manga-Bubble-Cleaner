@@ -129,6 +129,7 @@ body.dark-mode, html.dark-mode {
   flex-direction: column;
   align-items: center;
   margin-bottom: 18px;
+  font-size: 0.95rem;
 }
 .upload-dropzone {
   background: #ede9fe;
@@ -646,4 +647,10 @@ body.dark-mode, html.dark-mode {
 @media (max-width: 700px) {
   .main-card { padding: 18px 4px; }
   .modal-content { padding: 12px 2px 12px 2px; }
+} 
+
+.btn-primary.btn-outline-sm {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  border-radius: 8px;
 } 
