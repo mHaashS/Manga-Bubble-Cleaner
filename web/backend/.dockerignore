@@ -49,6 +49,9 @@ output/temp/
 *.bmp
 *.tiff
 
+# Exception : garder le dossier models/ (contient les modèles ML)
+!models/
+
 # Fichiers Git
 .git/
 .gitignore
