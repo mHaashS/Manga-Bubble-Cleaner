@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
     libgl1-mesa-glx \
+    python3-distutils \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. Copie le fichier requirements.txt
