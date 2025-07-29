@@ -40,7 +40,6 @@ decorator==5.2.1
 torch==2.5.1
 torchaudio==2.5.1
 torchvision==0.20.1
--e git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf#egg=detectron2
 distlib==0.3.9
 distro==1.9.0
 docstring_parser==0.16
