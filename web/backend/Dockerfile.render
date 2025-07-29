@@ -10,13 +10,19 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 # Dossier de travail
 WORKDIR /app
 
-# Installation des dépendances système en une seule couche
+# Installation des dépendances système en une seule couche (ajout des dépendances OpenCV)
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     python3-dev \
     libgl1-mesa-glx \
     python3-distutils \
+    libgthread-2.0-0 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
