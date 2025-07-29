@@ -2,7 +2,7 @@ absl-py==2.3.0
 aiofiles==23.2.1
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.13
-aiosignal==1.3.2
+aioosignal==1.3.2
 altgraph==0.17.4
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
@@ -37,6 +37,9 @@ cycler==0.12.1
 Cython==3.1.2
 dataclasses-json==0.6.7
 decorator==5.2.1
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
 -e git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf#egg=detectron2
 distlib==0.3.9
 distro==1.9.0
@@ -213,9 +216,9 @@ tkinterdnd2==0.4.3
 tokenizers==0.21.1
 tomli==2.2.1
 tomli_w==1.2.0
-torch==2.5.1+cu121
-torchaudio==2.5.1+cu121
-torchvision==0.20.1+cu121
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
 tqdm==4.67.1
 traitlets==5.14.3
 typer==0.16.0
