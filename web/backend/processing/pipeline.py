@@ -6,8 +6,28 @@ from .clean_bubbles import clean_bubbles, predictor as clean_predictor
 from .translate_bubbles import extract_and_translate, predictor as translate_predictor
 from .reinsert_translations import draw_translated_text
 import base64
+from PIL import Image  # Ajouté pour le redimensionnement
 
 logger = logging.getLogger(__name__)
+
+def resize_and_pad_cv2(image_cv2, target_size=(800, 1200), fill_color=(255, 255, 255)):
+    """
+    Redimensionne une image OpenCV à target_size sans déformation, avec padding si besoin.
+    """
+    original_height, original_width = image_cv2.shape[:2]
+    target_width, target_height = target_size
+    # Calcul du ratio d'échelle
+    ratio = min(target_width / original_width, target_height / original_height)
+    new_width = int(original_width * ratio)
+    new_height = int(original_height * ratio)
+    # Redimensionnement
+    resized = cv2.resize(image_cv2, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
+    # Création du fond
+    result = np.full((target_height, target_width, 3), fill_color, dtype=np.uint8)
+    paste_x = (target_width - new_width) // 2
+    paste_y = (target_height - new_height) // 2
+    result[paste_y:paste_y+new_height, paste_x:paste_x+new_width] = resized
+    return result
 
 def process_image_pipeline(image_bytes: bytes) -> bytes:
     """
@@ -22,6 +42,9 @@ def process_image_pipeline(image_bytes: bytes) -> bytes:
         if image is None:
             logger.error("Impossible de décoder l'image")
             return image_bytes
+        
+        # Redimensionnement à 800x1200 avec padding
+        image = resize_and_pad_cv2(image, target_size=(800, 1200))
         
         logger.info("Début du pipeline de traitement")
         
@@ -68,6 +91,8 @@ def process_image_pipeline_with_bubbles(image_bytes: bytes):
         if image is None:
             logger.error("Impossible de décoder l'image")
             return image_bytes, [], None
+        # Redimensionnement à 800x1200 avec padding
+        image = resize_and_pad_cv2(image, target_size=(800, 1200))
         logger.info("Début du pipeline de traitement (with bubbles)")
         outputs = clean_predictor(image)
         cleaned_image = clean_bubbles(image, outputs)
