@@ -568,8 +568,11 @@ function App() {
   return (
     <div className={`app-bg ${darkMode ? 'dark-mode' : ''}`}>
       <div className={`main-card ${darkMode ? 'dark-mode' : ''}`}>
+        <div className="logo-container">
+          <img src="/logo-bubble-hack.png" alt="Logo Bubble Hack" className="logo-bubble-hack" />
+        </div>
         <div className="header-container">
-          <h1 className="main-title">Bubble Translate</h1>
+          {/* Titre supprimé car déjà dans le logo */}
           <button 
             className="theme-toggle" 
             onClick={toggleDarkMode}
