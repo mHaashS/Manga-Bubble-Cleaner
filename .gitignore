@@ -15,6 +15,7 @@ web/backend/.env
 
 # React/Frontend
 web/frontend/node_modules/
+node_modules/
 web/frontend/build/
 web/frontend/.env
 
