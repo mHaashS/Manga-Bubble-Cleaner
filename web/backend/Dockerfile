@@ -34,8 +34,7 @@ COPY requirements.txt .
 # Installation des dépendances avec optimisations maximales
 RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
     && pip install --no-cache-dir --no-deps -r requirements.txt \
-    && pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf \
-    && pip cache purge
+    && pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf
 
 # Copie du code
 COPY . .
