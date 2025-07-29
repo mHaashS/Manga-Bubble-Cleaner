@@ -17,11 +17,10 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libgl1-mesa-glx \
     python3-distutils \
-    libgthread-2.0-0 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
@@ -45,4 +44,4 @@ COPY . .
 EXPOSE 10000
 
 # Commande de démarrage adaptée pour Render
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000} 
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}
