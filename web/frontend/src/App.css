@@ -20,7 +20,7 @@ body, html {
 
 /* Mode sombre */
 body.dark-mode, html.dark-mode {
-  background: linear-gradient(135deg, #0030FF 0%, #5100FF 100%);
+  background: linear-gradient(135deg, #0a1740 0%, #1a237e 100%);
 }
 
 .app-bg {
@@ -34,7 +34,7 @@ body.dark-mode, html.dark-mode {
 }
 
 .app-bg.dark-mode {
-  background: linear-gradient(135deg, #0030FF 0%, #5100FF 100%);
+  background: linear-gradient(135deg, #0a1740 0%, #1a237e 100%);
 }
 
 .main-card {
