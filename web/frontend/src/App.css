@@ -25,7 +25,7 @@ body.dark-mode, html.dark-mode {
 
 .app-bg {
   min-height: 100vh;
-  background: linear-gradient(135deg, #00AEFF 0%, #0030FF 50%, #5100FF 100%);
+  background: linear-gradient(135deg, #00AEFF 0%, #ffffff 50%, #002bff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,9 +38,9 @@ body.dark-mode, html.dark-mode {
 }
 
 .main-card {
-  background: #fff;
+  background: #f8fafc;
   border-radius: 18px;
-  box-shadow: 0 8px 32px 0 rgba(0, 48, 255, 0.10);
+  box-shadow: 0 8px 32px 0 rgba(0, 48, 255, 0.5);
   max-width: 950px;
   width: 100%;
   margin: 0 auto;
@@ -54,7 +54,7 @@ body.dark-mode, html.dark-mode {
 
 .main-card.dark-mode {
   background: #181c2a;
-  box-shadow: 0 8px 32px 0 rgba(81, 0, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(81, 0, 255, 0.5);
   color: #f9fafb;
   border: 1.5px solid #0030FF;
 }
@@ -134,7 +134,7 @@ body.dark-mode, html.dark-mode {
   font-size: 0.95rem;
 }
 .upload-dropzone {
-  background: #f8fbff;
+  background: #f8fafc;
   border: 2.5px dashed #00AEFF;
   border-radius: 12px;
   padding: 32px 18px 24px 18px;
@@ -154,7 +154,7 @@ body.dark-mode, html.dark-mode {
 
 .upload-dropzone:hover {
   border: 2.5px solid #0030FF;
-  background: #e6f3ff;
+  background: #f1f5f9;
 }
 
 .dark-mode .upload-dropzone:hover {
@@ -323,7 +323,7 @@ body.dark-mode, html.dark-mode {
 }
 
 .image-card {
-  background: #fff;
+  background: #f8fafc;
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 4px 12px 0 rgba(0, 48, 255, 0.10);
@@ -408,7 +408,7 @@ body.dark-mode, html.dark-mode {
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s ease;
-  background: #f9fafb;
+  background: #f8fafc;
   transition: background 0.3s ease;
 }
 
@@ -481,7 +481,7 @@ body.dark-mode, html.dark-mode {
 }
 
 .modal-content {
-  background: #fff;
+  background: #f8fafc;
   border-radius: 16px;
   padding: 24px;
   max-width: 90vw;

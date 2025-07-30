@@ -648,12 +648,170 @@ function App() {
                         )}
                       </div>
                       <div className="image-name-sm">{img.file.name}</div>
-                      <button className="btn-outline btn-outline-sm" onClick={() => handleDownload(img)}>
-                        ⬇ Télécharger
-                      </button>
-                      <button className="btn-outline btn-outline-sm btn-edit" onClick={() => openEditModal(img, idx)}>
-                        ✏️ Éditer
-                      </button>
+                                             <div 
+                         style={{
+                           display: 'flex', 
+                           gap: 8, 
+                           width: '100%',
+                           position: 'relative',
+                           overflow: 'hidden'
+                         }}
+                                                   onMouseLeave={(e) => {
+                            // Réinitialiser tous les boutons quand on quitte la zone
+                            const buttons = e.currentTarget.querySelectorAll('button');
+                            buttons.forEach(button => {
+                              button.style.width = '50%';
+                              button.style.minWidth = 'auto';
+                              button.style.maxWidth = 'none';
+                              const textElement = button.querySelector('.button-text');
+                              if (textElement) {
+                                textElement.style.transform = 'translateX(-20px)';
+                                textElement.style.opacity = '0';
+                              }
+                            });
+                          }}
+                       >
+                                                   <button 
+                            className="btn-outline btn-outline-sm" 
+                            onClick={() => handleDownload(img)}
+                            style={{
+                              width: '50%',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8
+                            }}
+                            onMouseEnter={(e) => {
+                              // Agrandir ce bouton avec une largeur fixe pour éviter le double agrandissement
+                              e.target.style.width = '70%';
+                              e.target.style.minWidth = '120px';
+                              e.target.style.maxWidth = '70%';
+                              
+                              // Rétrécir l'autre bouton avec la même transition
+                              const otherButton = e.target.nextElementSibling;
+                              if (otherButton) {
+                                otherButton.style.width = '30%';
+                                otherButton.style.minWidth = 'auto';
+                                otherButton.style.maxWidth = '30%';
+                              }
+                              
+                              // Afficher le texte immédiatement pour éviter le second agrandissement
+                              const textElement = e.target.querySelector('.button-text');
+                              if (textElement) {
+                                textElement.style.transform = 'translateX(0)';
+                                textElement.style.opacity = '1';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              // Réinitialiser ce bouton
+                              e.target.style.width = '50%';
+                              e.target.style.minWidth = 'auto';
+                              e.target.style.maxWidth = 'none';
+                              
+                              // Réinitialiser l'autre bouton
+                              const otherButton = e.target.nextElementSibling;
+                              if (otherButton) {
+                                otherButton.style.width = '50%';
+                                otherButton.style.minWidth = 'auto';
+                                otherButton.style.maxWidth = 'none';
+                              }
+                              
+                              const textElement = e.target.querySelector('.button-text');
+                              if (textElement) {
+                                textElement.style.transform = 'translateX(-20px)';
+                                textElement.style.opacity = '0';
+                              }
+                            }}
+                          >
+                                                       <span style={{fontSize: '1.2rem', transition: 'none'}}>⬇</span>
+                            <span 
+                              className="button-text"
+                              style={{
+                                transform: 'translateX(-20px)',
+                                opacity: '0',
+                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              Télécharger
+                            </span>
+                         </button>
+                                                                          <button 
+                           className="btn-outline btn-outline-sm btn-edit" 
+                           onClick={() => openEditModal(img, idx)}
+                           style={{
+                             width: '50%',
+                             position: 'relative',
+                             overflow: 'hidden',
+                             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                             display: 'flex',
+                             alignItems: 'center',
+                             justifyContent: 'center',
+                             gap: 8
+                           }}
+                           onMouseEnter={(e) => {
+                             // Agrandir ce bouton avec une largeur fixe pour éviter le double agrandissement
+                             e.target.style.width = '70%';
+                             e.target.style.minWidth = '120px';
+                             e.target.style.maxWidth = '70%';
+                             
+                             // Rétrécir l'autre bouton avec la même transition
+                             const otherButton = e.target.previousElementSibling;
+                             if (otherButton) {
+                               otherButton.style.width = '30%';
+                               otherButton.style.minWidth = 'auto';
+                               otherButton.style.maxWidth = '30%';
+                             }
+                             
+                             // Afficher le texte immédiatement pour éviter le second agrandissement
+                             const textElement = e.target.querySelector('.button-text');
+                             if (textElement) {
+                               textElement.style.transform = 'translateX(0)';
+                               textElement.style.opacity = '1';
+                             }
+                           }}
+                           onMouseLeave={(e) => {
+                             // Réinitialiser ce bouton
+                             e.target.style.width = '50%';
+                             e.target.style.minWidth = 'auto';
+                             e.target.style.maxWidth = 'none';
+                             
+                             // Réinitialiser l'autre bouton
+                             const otherButton = e.target.previousElementSibling;
+                             if (otherButton) {
+                               otherButton.style.width = '50%';
+                               otherButton.style.minWidth = 'auto';
+                               otherButton.style.maxWidth = 'none';
+                             }
+                             
+                             const textElement = e.target.querySelector('.button-text');
+                             if (textElement) {
+                               textElement.style.transform = 'translateX(-20px)';
+                               textElement.style.opacity = '0';
+                             }
+                           }}
+                         >
+                                                     <span style={{fontSize: '1.2rem', transition: 'none'}}>✏️</span>
+                           <span 
+                             className="button-text"
+                             style={{
+                               transform: 'translateX(-20px)',
+                               opacity: '0',
+                               transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                               fontSize: '0.8rem',
+                               fontWeight: 500,
+                               whiteSpace: 'nowrap'
+                             }}
+                           >
+                             Éditer
+                           </span>
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>
@@ -677,21 +835,21 @@ function App() {
 
       {editModalOpen && (
         <div className="modal-bg" onClick={closeEditModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{
-            width: '90vw',
-            height: '90vh',
-            maxWidth: 1600,
-            maxHeight: 1000,
-            minWidth: 900,
-            minHeight: 500,
-            display: 'flex',
-            flexDirection: 'row',
-            gap: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            padding: 0
-          }}>
+                     <div className="modal-content" onClick={e => e.stopPropagation()} style={{
+             width: '95vw',
+             height: '90vh',
+             maxWidth: 1800,
+             maxHeight: 1000,
+             minWidth: 1000,
+             minHeight: 500,
+             display: 'flex',
+             flexDirection: 'row',
+             gap: 24,
+             alignItems: 'center',
+             justifyContent: 'center',
+             overflow: 'hidden',
+             padding: 0
+           }}>
             <button className="modal-close" onClick={closeEditModal}>✕</button>
             {/* Image à gauche */}
             <div style={{
@@ -710,46 +868,46 @@ function App() {
                 height={editImageSize.height}
                 onClick={handleCanvasClick}
                 className="editor-canvas"
-                style={{
-                  maxWidth: 'calc(90vw - 420px)',
-                  maxHeight: '85vh',
-                  width: 'auto',
-                  height: 'auto',
-                  borderRadius: 12,
-                  border: '2px solid #a78bfa',
-                  background: '#fff',
-                  boxShadow: '0 4px 24px 0 rgba(124,58,237,0.12)',
-                  display: 'block',
-                  margin: '0 auto',
-                  cursor: 'pointer'
-                }}
+                                 style={{
+                   maxWidth: 'calc(95vw - 620px)',
+                   maxHeight: '85vh',
+                   width: 'auto',
+                   height: 'auto',
+                   borderRadius: 12,
+                   border: '2px solid #a78bfa',
+                   background: darkMode ? '#fff' : '#f8fafc',
+                   boxShadow: '0 4px 24px 0 rgba(124,58,237,0.12)',
+                   display: 'block',
+                   margin: '0 auto',
+                   cursor: 'pointer'
+                 }}
               />
             </div>
-            {/* Zone d'édition à droite */}
-            <div style={{
-              width: 400,
-              minWidth: 320,
-              maxWidth: 440,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              overflowY: 'auto',
-              background: 'rgba(255,255,255,0.97)',
-              borderLeft: '1.5px solid #ede9fe',
-              padding: '24px 18px 18px 18px',
-              boxSizing: 'border-box'
-            }}>
-              <div style={{marginBottom: 8, color: '#6366f1', fontWeight: 600}}>
+                         {/* Zone d'édition à droite */}
+                           <div style={{
+                width: 420,
+                minWidth: 380,
+                maxWidth: 460,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                overflowY: 'auto',
+                                 background: darkMode ? 'rgba(24, 28, 42, 0.97)' : 'rgba(248, 250, 252, 0.97)',
+                borderLeft: darkMode ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(124, 58, 237, 0.2)',
+                padding: '20px 16px 16px 16px',
+                boxSizing: 'border-box'
+              }}>
+              <div style={{marginBottom: 8, color: darkMode ? '#a78bfa' : '#6366f1', fontWeight: 600}}>
                 Bulle {currentBubbleIdx + 1} / {editBubbles.length}
               </div>
-              <div style={{marginBottom: 12, color: '#7c3aed', fontSize: 13, fontStyle: 'italic'}}>
+              <div style={{marginBottom: 12, color: darkMode ? '#c4b5fd' : '#7c3aed', fontSize: 13, fontStyle: 'italic'}}>
                 💡 Cliquez sur une bulle dans l'image pour la sélectionner
               </div>
-              <div style={{marginBottom: 8, color: '#888', fontSize: 14}}>
+              <div style={{marginBottom: 8, color: darkMode ? '#d1d5db' : '#888', fontSize: 14}}>
                 <b>Texte original :</b><br/>{editBubbles[currentBubbleIdx]?.ocrText || <i>(vide)</i>}
               </div>
-              <div style={{marginBottom: 8, color: '#7c3aed', fontWeight: 500, fontSize: 15}}>
+              <div style={{marginBottom: 8, color: darkMode ? '#a78bfa' : '#7c3aed', fontWeight: 500, fontSize: 15}}>
                 <b>Texte traduit :</b>
               </div>
               <textarea
@@ -757,19 +915,77 @@ function App() {
                 value={editBubbles[currentBubbleIdx]?.translatedText || ""}
                 onChange={e => handleBubbleTextChange(e.target.value)}
                 rows={6}
-                style={{ width: '100%', borderRadius: 8, border: '1.5px solid #a78bfa', padding: 10, fontSize: 16, resize: 'vertical', marginBottom: 8 }}
+                style={{ width: '90%', borderRadius: 8, border: '1.5px solid #a78bfa', padding: 10, fontSize: 16, resize: 'vertical', marginBottom: 8 }}
               />
               <div style={{marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8}}>
-                <label style={{color: '#6366f1', fontWeight: 500}}>Taille police :</label>
+                <label style={{color: darkMode ? '#a78bfa' : '#6366f1', fontWeight: 500}}>Taille police :</label>
                 <input type="number" min={8} max={80} value={editBubbles[currentBubbleIdx]?.fontSize || 14} onChange={e => handleFontSizeChange(e.target.value)} style={{width: 70, borderRadius: 6, border: '1.5px solid #a78bfa', padding: 4, fontSize: 15}} />
               </div>
-              <div style={{display: 'flex', gap: 8, marginTop: 12}}>
-                <button className="btn-outline btn-outline-sm" onClick={goToPrevBubble} disabled={currentBubbleIdx === 0}>◀ Précédente</button>
-                <button className="btn-outline btn-outline-sm" onClick={goToNextBubble} disabled={currentBubbleIdx === editBubbles.length - 1}>Suivante ▶</button>
-                <div style={{flex: 1}}></div>
-                <button className="btn-outline btn-outline-sm" onClick={closeEditModal}>Annuler</button>
-                <button className="btn-primary btn-outline-sm" onClick={saveEditModal}>Enregistrer</button>
-              </div>
+                             <div style={{display: 'flex', gap: 12, marginTop: 16}}>
+                 <button className="btn-outline" style={{flex: 1, padding: '12px 16px', fontSize: 15, fontWeight: 500}} onClick={goToPrevBubble} disabled={currentBubbleIdx === 0}>◀ Précédente</button>
+                 <button className="btn-outline" style={{flex: 1, padding: '12px 16px', fontSize: 15, fontWeight: 500}} onClick={goToNextBubble} disabled={currentBubbleIdx === editBubbles.length - 1}>Suivante ▶</button>
+               </div>
+                               <div style={{display: 'flex', gap: 12, marginTop: 12}}>
+                                     <button 
+                     style={{
+                       flex: 1, 
+                       padding: '12px 16px', 
+                       fontSize: 15, 
+                       fontWeight: 500, 
+                       borderColor: '#ef4444', 
+                       color: '#ef4444',
+                       backgroundColor: 'transparent',
+                       border: '1.5px solid #ef4444',
+                       borderRadius: 8,
+                       transition: 'all 0.2s ease',
+                       cursor: 'pointer'
+                     }}
+                     onMouseEnter={(e) => {
+                       e.target.style.backgroundColor = '#dc2626';
+                       e.target.style.color = '#ffffff';
+                       e.target.style.borderColor = '#dc2626';
+                     }}
+                     onMouseLeave={(e) => {
+                       e.target.style.backgroundColor = 'transparent';
+                       e.target.style.color = '#ef4444';
+                       e.target.style.borderColor = '#ef4444';
+                     }}
+                     onClick={closeEditModal}
+                   >
+                     Annuler
+                   </button>
+                                     <button 
+                     style={{
+                       flex: 1, 
+                       padding: '12px 16px', 
+                       fontSize: 15, 
+                       fontWeight: 500,
+                       backgroundColor: '#7c3aed',
+                       color: '#ffffff',
+                       border: '1.5px solid #7c3aed',
+                       borderRadius: 8,
+                       transition: 'all 0.3s ease',
+                       cursor: 'pointer',
+                       transform: 'translateY(0)',
+                       boxShadow: '0 2px 8px rgba(124, 58, 237, 0.2)'
+                     }}
+                     onMouseEnter={(e) => {
+                       e.target.style.backgroundColor = '#6d28d9';
+                       e.target.style.borderColor = '#6d28d9';
+                       e.target.style.transform = 'translateY(-2px)';
+                       e.target.style.boxShadow = '0 4px 16px rgba(124, 58, 237, 0.4)';
+                     }}
+                     onMouseLeave={(e) => {
+                       e.target.style.backgroundColor = '#7c3aed';
+                       e.target.style.borderColor = '#7c3aed';
+                       e.target.style.transform = 'translateY(0)';
+                       e.target.style.boxShadow = '0 2px 8px rgba(124, 58, 237, 0.2)';
+                     }}
+                     onClick={saveEditModal}
+                   >
+                     Enregistrer
+                   </button>
+                </div>
             </div>
           </div>
         </div>
