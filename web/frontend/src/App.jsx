@@ -46,6 +46,13 @@ function App() {
     }
   }, [darkMode]);
 
+  // Redessiner le canvas quand les polygones changent
+  useEffect(() => {
+    if (bubbleEditorOpen && bubblePolygons.length > 0) {
+      drawBubbleEditor();
+    }
+  }, [bubblePolygons, selectedPolygon, bubbleEditorOpen]);
+
   const handleFileChange = (e) => {
     const selected = Array.from(e.target.files);
     const allFiles = [...files];
@@ -546,6 +553,27 @@ function App() {
     setOriginalImageUrl(URL.createObjectURL(img.file));
     
     try {
+      // Charger l'image originale en premier pour obtenir ses dimensions
+      const imgElement = new Image();
+      imgElement.onload = () => {
+        setBubbleEditorCanvas({
+          width: imgElement.width,
+          height: imgElement.height
+        });
+        
+        // Initialiser le canvas immédiatement avec la bonne taille
+        if (bubbleCanvasRef.current) {
+          const canvas = bubbleCanvasRef.current;
+          const ctx = canvas.getContext('2d');
+          canvas.width = imgElement.width;
+          canvas.height = imgElement.height;
+          
+          // Dessiner l'image immédiatement
+          ctx.drawImage(imgElement, 0, 0);
+        }
+      };
+      imgElement.src = URL.createObjectURL(img.file);
+      
       // Récupérer les polygones de bulles depuis le backend
       const formData = new FormData();
       formData.append("file", img.file);
@@ -562,19 +590,10 @@ function App() {
       const data = await response.json();
       setBubblePolygons(data.polygons || []);
       
-      // Charger l'image originale
-      const imgElement = new Image();
-      imgElement.onload = () => {
-        setBubbleEditorCanvas({
-          width: imgElement.width,
-          height: imgElement.height
-        });
-        // Forcer le redessinage après un court délai pour s'assurer que tout est chargé
-        setTimeout(() => {
-          drawBubbleEditor();
-        }, 100);
-      };
-      imgElement.src = URL.createObjectURL(img.file);
+      // Redessiner avec les polygones une fois qu'ils sont chargés
+      setTimeout(() => {
+        drawBubbleEditor();
+      }, 50);
       
     } catch (error) {
       console.error("Erreur lors du chargement des polygones:", error);
@@ -595,7 +614,7 @@ function App() {
 
   // Dessine l'éditeur de bulles
   const drawBubbleEditor = () => {
-    if (!bubbleCanvasRef.current || !originalImageUrl || !bubbleEditorCanvas) return;
+    if (!bubbleCanvasRef.current || !originalImageUrl) return;
     
     const canvas = bubbleCanvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -603,8 +622,13 @@ function App() {
     // Charger l'image originale
     const img = new Image();
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
+      // S'assurer que le canvas a la bonne taille
+      if (canvas.width !== img.width || canvas.height !== img.height) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      }
+      
+      // Dessiner l'image de base
       ctx.drawImage(img, 0, 0);
       
       // Dessiner les polygones
@@ -1723,27 +1747,54 @@ function App() {
                 Éditeur de bulles - {bubblePolygons.length} bulle{bubblePolygons.length > 1 ? 's' : ''} détectée{bubblePolygons.length > 1 ? 's' : ''}
               </div>
               
-              <canvas
-                ref={bubbleCanvasRef}
-                onClick={handleBubbleEditorClick}
-                onMouseDown={handleBubbleEditorMouseDown}
-                onMouseMove={handleBubbleEditorMouseMove}
-                onMouseUp={handleBubbleEditorMouseUp}
-                onMouseLeave={handleBubbleEditorMouseUp}
-                style={{
-                  maxWidth: 'calc(95vw - 420px)',
-                  maxHeight: '70vh',
-                  width: 'auto',
-                  height: 'auto',
-                  borderRadius: 12,
-                  border: '2px solid #a78bfa',
-                  background: darkMode ? '#fff' : '#f8fafc',
-                  boxShadow: '0 4px 24px 0 rgba(124,58,237,0.12)',
-                  display: 'block',
-                  margin: '0 auto',
-                  cursor: isDragging ? 'grabbing' : 'pointer'
-                }}
-              />
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <canvas
+                  ref={bubbleCanvasRef}
+                  onClick={handleBubbleEditorClick}
+                  onMouseDown={handleBubbleEditorMouseDown}
+                  onMouseMove={handleBubbleEditorMouseMove}
+                  onMouseUp={handleBubbleEditorMouseUp}
+                  onMouseLeave={handleBubbleEditorMouseUp}
+                  style={{
+                    maxWidth: 'calc(95vw - 420px)',
+                    maxHeight: '70vh',
+                    minWidth: '400px',
+                    minHeight: '300px',
+                    width: 'auto',
+                    height: 'auto',
+                    borderRadius: 12,
+                    border: '2px solid #a78bfa',
+                    background: darkMode ? '#fff' : '#f8fafc',
+                    boxShadow: '0 4px 24px 0 rgba(124,58,237,0.12)',
+                    display: 'block',
+                    margin: '0 auto',
+                    cursor: isDragging ? 'grabbing' : 'pointer'
+                  }}
+                />
+                {!originalImageUrl && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    color: darkMode ? '#9ca3af' : '#6b7280'
+                  }}>
+                    <div style={{
+                      width: '24px',
+                      height: '24px',
+                      border: '2px solid #a78bfa',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <span style={{ fontSize: '14px' }}>Chargement de l'image...</span>
+                  </div>
+                )}
+              </div>
               
               <div style={{
                 marginTop: 16,
