@@ -2028,25 +2028,32 @@ function App() {
                     padding: '12px 16px',
                     fontSize: 15,
                     fontWeight: 500,
-                    borderColor: '#ef4444',
-                    color: '#ef4444',
-                    backgroundColor: 'transparent',
-                    border: '1.5px solid #ef4444',
+                    backgroundColor: selectedPolygon === null ? '#6b7280' : '#ef4444',
+                    color: '#ffffff',
+                    border: `1.5px solid ${selectedPolygon === null ? '#6b7280' : '#ef4444'}`,
                     borderRadius: 8,
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer'
+                    transition: 'all 0.3s ease',
+                    cursor: selectedPolygon === null ? 'not-allowed' : 'pointer',
+                    transform: 'translateY(0)',
+                    boxShadow: selectedPolygon === null ? 'none' : '0 2px 8px rgba(239, 68, 68, 0.2)'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#dc2626';
-                    e.target.style.color = '#ffffff';
-                    e.target.style.borderColor = '#dc2626';
+                    if (selectedPolygon !== null) {
+                      e.target.style.backgroundColor = '#dc2626';
+                      e.target.style.borderColor = '#dc2626';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 16px rgba(239, 68, 68, 0.4)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                    e.target.style.color = '#ef4444';
-                    e.target.style.borderColor = '#ef4444';
+                    if (selectedPolygon !== null) {
+                      e.target.style.backgroundColor = '#ef4444';
+                      e.target.style.borderColor = '#ef4444';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.2)';
+                    }
                   }}
-                  onClick={deleteSelectedBubble}
+                  onClick={selectedPolygon === null ? undefined : deleteSelectedBubble}
                   disabled={selectedPolygon === null}
                 >
                   🗑️ Supprimer la bulle sélectionnée
