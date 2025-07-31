@@ -839,6 +839,45 @@ function App() {
     }
   };
 
+  // Ajoute une nouvelle bulle
+  const addNewBubble = () => {
+    if (!bubbleEditorCanvas) return;
+    
+    // Créer un polygone octogonal (8 sommets) au centre du canvas
+    const centerX = bubbleEditorCanvas.width / 2;
+    const centerY = bubbleEditorCanvas.height / 2;
+    const radius = Math.min(bubbleEditorCanvas.width, bubbleEditorCanvas.height) * 0.15; // 15% de la plus petite dimension
+    
+    // Générer les 8 points d'un octogone
+    const points = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI * 2) / 8;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      points.push([x, y]);
+    }
+    
+    // Créer la nouvelle bulle
+    const newBubble = {
+      polygon: points,
+      class: 0, // Bulle par défaut
+      confidence: 0.9, // Confiance élevée pour une bulle manuelle
+      ocr_text: '', // Texte vide
+      translated_text: '', // Texte traduit vide
+      x_min: Math.min(...points.map(p => p[0])),
+      y_min: Math.min(...points.map(p => p[1])),
+      x_max: Math.max(...points.map(p => p[0])),
+      y_max: Math.max(...points.map(p => p[1]))
+    };
+    
+    // Ajouter la nouvelle bulle à la liste
+    const newPolygons = [...bubblePolygons, newBubble];
+    setBubblePolygons(newPolygons);
+    
+    // Sélectionner automatiquement la nouvelle bulle
+    setSelectedPolygon(newPolygons.length - 1);
+  };
+
   // Retraite l'image avec les polygones modifiés
   const retreatWithPolygons = async () => {
     if (bubbleEditorIdx === null) return;
@@ -1895,6 +1934,37 @@ function App() {
                   ) : (
                     '🔄 Retraiter avec les bulles modifiées'
                   )}
+                </button>
+                
+                <button 
+                  style={{
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    backgroundColor: '#3b82f6',
+                    color: '#ffffff',
+                    border: '1.5px solid #3b82f6',
+                    borderRadius: 8,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    transform: 'translateY(0)',
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#2563eb';
+                    e.target.style.borderColor = '#2563eb';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#3b82f6';
+                    e.target.style.borderColor = '#3b82f6';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.2)';
+                  }}
+                  onClick={addNewBubble}
+                >
+                  ➕ Ajouter une bulle
                 </button>
                 
                 <button 
