@@ -1308,7 +1308,7 @@ function App() {
                             </span>
                          </button>
                                                                           <button 
-                           className="btn-outline btn-outline-sm btn-edit" 
+                           className="btn-outline btn-outline-sm" 
                            onClick={() => openEditModal(img, idx)}
                            style={{
                              width: '33.33%',
