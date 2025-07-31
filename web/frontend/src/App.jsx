@@ -58,7 +58,12 @@ function App() {
     const allFiles = [...files];
     const allImages = [...images];
     selected.forEach(file => {
-      const alreadyExists = allFiles.some(f => f.name === file.name && f.size === file.size);
+      // Vérification plus robuste : nom, taille et dernière modification
+      const alreadyExists = allFiles.some(f => 
+        f.name === file.name && 
+        f.size === file.size && 
+        f.lastModified === file.lastModified
+      );
       if (!alreadyExists) {
         allFiles.push(file);
         allImages.push({ file, status: 'en attente', result: null, error: null });
@@ -67,6 +72,8 @@ function App() {
     setFiles(allFiles);
     setImages(allImages);
     setGlobalError("");
+    // Réinitialiser l'input pour permettre la sélection du même fichier
+    e.target.value = '';
   };
 
   const handleDrop = (e) => {
@@ -76,7 +83,12 @@ function App() {
       const allFiles = [...files];
       const allImages = [...images];
       selected.forEach(file => {
-        const alreadyExists = allFiles.some(f => f.name === file.name && f.size === file.size);
+        // Vérification plus robuste : nom, taille et dernière modification
+        const alreadyExists = allFiles.some(f => 
+          f.name === file.name && 
+          f.size === file.size && 
+          f.lastModified === file.lastModified
+        );
         if (!alreadyExists) {
           allFiles.push(file);
           allImages.push({ file, status: 'en attente', result: null, error: null });
