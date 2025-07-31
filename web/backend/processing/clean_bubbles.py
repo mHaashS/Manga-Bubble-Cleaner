@@ -33,8 +33,16 @@ CLASS_NAMES = {
 }
 
 def clean_bubbles(image, outputs):
-    masks = outputs["instances"].pred_masks.to("cpu").numpy()
-    classes = outputs["instances"].pred_classes.to("cpu").numpy()
+    # Gérer à la fois les outputs de Detectron2 et nos MockOutputs
+    if hasattr(outputs, 'instances'):
+        # MockOutputs
+        instances = outputs.instances
+    else:
+        # Detectron2 outputs
+        instances = outputs["instances"]
+    
+    masks = instances.pred_masks.to("cpu").numpy()
+    classes = instances.pred_classes.to("cpu").numpy()
 
     result = image.copy()
 

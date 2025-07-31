@@ -114,9 +114,17 @@ def extract_text_easyocr(image):
     return " ".join([text for _, text, _ in results]).strip()
 
 def extract_and_translate(image, outputs):
-    masks = outputs["instances"].pred_masks.to("cpu").numpy()
-    classes = outputs["instances"].pred_classes.to("cpu").numpy()
-    scores = outputs["instances"].scores.to("cpu").numpy()
+    # Gérer à la fois les outputs de Detectron2 et nos MockOutputs
+    if hasattr(outputs, 'instances'):
+        # MockOutputs
+        instances = outputs.instances
+    else:
+        # Detectron2 outputs
+        instances = outputs["instances"]
+    
+    masks = instances.pred_masks.to("cpu").numpy()
+    classes = instances.pred_classes.to("cpu").numpy()
+    scores = instances.scores.to("cpu").numpy()
 
     results = []
     for i, (mask, class_id, score) in enumerate(zip(masks, classes, scores)):

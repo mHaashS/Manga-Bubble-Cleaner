@@ -19,7 +19,22 @@ function App() {
   const [editCleanedUrl, setEditCleanedUrl] = useState(null);
   const [initialAdjustmentDone, setInitialAdjustmentDone] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  
+  // Nouveaux états pour l'éditeur de bulles
+  const [bubbleEditorOpen, setBubbleEditorOpen] = useState(false);
+  const [bubbleEditorIdx, setBubbleEditorIdx] = useState(null);
+  const [bubblePolygons, setBubblePolygons] = useState([]);
+  const [selectedPolygon, setSelectedPolygon] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({x: 0, y: 0});
+  const [dragType, setDragType] = useState(null); // 'polygon' ou 'point'
+  const [dragPolygonIndex, setDragPolygonIndex] = useState(null);
+  const [dragPointIndex, setDragPointIndex] = useState(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState(null);
+  const [bubbleEditorCanvas, setBubbleEditorCanvas] = useState(null);
+  
   const canvasRef = useRef(null);
+  const bubbleCanvasRef = useRef(null);
 
   // Appliquer le mode dark/light au body
   useEffect(() => {
@@ -162,8 +177,18 @@ function App() {
     setEditIdx(idx);
     setCurrentBubbleIdx(0);
     const bubbles = img.bubbles ? img.bubbles.map(b => ({...b})) : [];
-    setEditBubbles(bubbles);
-    setEditImageUrl(img.cleanedUrl || img.result.url);
+    
+    // S'assurer que toutes les bulles ont une taille de police valide (14 par défaut)
+    const normalizedBubbles = bubbles.map(bubble => ({
+      ...bubble,
+      fontSize: bubble.fontSize || 14
+    }));
+    
+    setEditBubbles(normalizedBubbles);
+    
+    // Utiliser la bonne image : cleanedUrl si disponible, sinon result.url
+    const imageToUse = img.cleanedUrl || img.result.url;
+    setEditImageUrl(imageToUse);
     setEditCleanedUrl(img.cleanedUrl || null);
     setEditImageSize({width: img.width, height: img.height});
     setEditModalOpen(true);
@@ -172,7 +197,7 @@ function App() {
     // Ajuster automatiquement toutes les tailles de police à la première ouverture
     setTimeout(() => {
       if (!initialAdjustmentDone) {
-        bubbles.forEach((_, index) => autoAdjustFontSize(index));
+        normalizedBubbles.forEach((_, index) => autoAdjustFontSize(index));
         setInitialAdjustmentDone(true);
       }
     }, 100);
@@ -224,6 +249,16 @@ function App() {
           } catch (error) {
             console.error("Erreur lors de la création du blob depuis l'URL:", error);
           }
+        }
+        
+        // Vérifier que nous avons bien l'image nettoyée avec les bulles modifiées
+        if (!cleanedBlob) {
+          console.error("Aucun blob d'image nettoyée disponible");
+          console.log("État de l'image:", {
+            hasCleanedBlob: !!newImages[editIdx].cleanedBlob,
+            hasCleanedUrl: !!newImages[editIdx].cleanedUrl,
+            hasResultUrl: !!newImages[editIdx].result?.url
+          });
         }
         
         if (!cleanedBlob) {
@@ -301,6 +336,11 @@ function App() {
   };
   // Fonction utilitaire pour word wrap sur le canvas
   function wrapText(ctx, text, x, y, maxWidth, lineHeight, color, font, align = 'center') {
+    // Gérer les cas où text est undefined, null ou pas une string
+    if (!text || typeof text !== 'string') {
+      text = '';
+    }
+    
     ctx.save();
     ctx.font = font;
     ctx.fillStyle = color;
@@ -355,7 +395,7 @@ function App() {
           const bubbleWidth = bulle.x_max - bulle.x_min;
           const marginX = bubbleWidth * 0.1;
           const maxWidth = bubbleWidth - (2 * marginX);
-          const fontSize = bulle.fontSize || 24;
+          const fontSize = bulle.fontSize || 14;
           const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
           const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
           wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
@@ -386,7 +426,7 @@ function App() {
           const bubbleWidth = bulle.x_max - bulle.x_min;
           const marginX = bubbleWidth * 0.1;
           const maxWidth = bubbleWidth - (2 * marginX);
-          const fontSize = bulle.fontSize || 24;
+          const fontSize = bulle.fontSize || 14;
           const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
           const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
           wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
@@ -402,6 +442,13 @@ function App() {
       img.src = editCleanedUrl;
     });
   }, [editModalOpen, editCleanedUrl, editBubbles, currentBubbleIdx]);
+
+  // Redessiner l'éditeur de bulles quand les polygones changent
+  useEffect(() => {
+    if (bubbleEditorOpen && bubblePolygons.length > 0) {
+      drawBubbleEditor();
+    }
+  }, [bubbleEditorOpen, bubblePolygons, selectedPolygon]);
 
 
 
@@ -488,6 +535,350 @@ function App() {
     setDarkMode(!darkMode);
   };
 
+  // === FONCTIONS POUR L'ÉDITEUR DE BULLES ===
+  
+  // Ouvre l'éditeur de bulles
+  const openBubbleEditor = async (img, idx) => {
+    setBubbleEditorIdx(idx);
+    setBubbleEditorOpen(true);
+    setSelectedPolygon(null);
+    setOriginalImageUrl(URL.createObjectURL(img.file));
+    
+    try {
+      // Récupérer les polygones de bulles depuis le backend
+      const formData = new FormData();
+      formData.append("file", img.file);
+      
+      const response = await fetch("http://localhost:8000/get-bubble-polygons", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setBubblePolygons(data.polygons || []);
+      
+      // Charger l'image originale
+      const imgElement = new Image();
+      imgElement.onload = () => {
+        setBubbleEditorCanvas({
+          width: imgElement.width,
+          height: imgElement.height
+        });
+        // Forcer le redessinage après un court délai pour s'assurer que tout est chargé
+        setTimeout(() => {
+          drawBubbleEditor();
+        }, 100);
+      };
+      imgElement.src = URL.createObjectURL(img.file);
+      
+    } catch (error) {
+      console.error("Erreur lors du chargement des polygones:", error);
+      alert("Erreur lors du chargement des polygones de bulles");
+      setBubbleEditorOpen(false);
+    }
+  };
+
+  // Ferme l'éditeur de bulles
+  const closeBubbleEditor = () => {
+    setBubbleEditorOpen(false);
+    setBubbleEditorIdx(null);
+    setBubblePolygons([]);
+    setSelectedPolygon(null);
+    setOriginalImageUrl(null);
+    setBubbleEditorCanvas(null);
+  };
+
+  // Dessine l'éditeur de bulles
+  const drawBubbleEditor = () => {
+    if (!bubbleCanvasRef.current || !originalImageUrl || !bubbleEditorCanvas) return;
+    
+    const canvas = bubbleCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    // Charger l'image originale
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      // Dessiner les polygones
+      bubblePolygons.forEach((polygon, index) => {
+        const isSelected = selectedPolygon === index;
+        
+        // Dessiner le polygone
+        ctx.beginPath();
+        ctx.moveTo(polygon.polygon[0][0], polygon.polygon[0][1]);
+        for (let i = 1; i < polygon.polygon.length; i++) {
+          ctx.lineTo(polygon.polygon[i][0], polygon.polygon[i][1]);
+        }
+        ctx.closePath();
+        
+        // Style du polygone
+        ctx.strokeStyle = isSelected ? '#ff6b6b' : '#4ecdc4';
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.stroke();
+        
+        // Remplissage semi-transparent
+        ctx.fillStyle = isSelected ? 'rgba(255, 107, 107, 0.2)' : 'rgba(78, 205, 196, 0.1)';
+        ctx.fill();
+        
+        // Dessiner les points de contrôle (plus gros)
+        polygon.polygon.forEach((point, pointIndex) => {
+          ctx.beginPath();
+          ctx.arc(point[0], point[1], isSelected ? 10 : 8, 0, 2 * Math.PI);
+          ctx.fillStyle = isSelected ? '#ff6b6b' : '#4ecdc4';
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      });
+    };
+    img.src = originalImageUrl;
+  };
+
+  // Gère le clic sur le canvas de l'éditeur
+  const handleBubbleEditorClick = (event) => {
+    if (!bubbleCanvasRef.current) return;
+    
+    const canvas = bubbleCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    
+    // Vérifier si on clique sur un point de contrôle (zone plus grande)
+    let clickedPolygon = null;
+    let clickedPoint = null;
+    
+    for (let i = 0; i < bubblePolygons.length; i++) {
+      const polygon = bubblePolygons[i];
+      for (let j = 0; j < polygon.polygon.length; j++) {
+        const point = polygon.polygon[j];
+        const distance = Math.sqrt((x - point[0])**2 + (y - point[1])**2);
+        if (distance <= 15) { // Zone de clic plus grande
+          clickedPolygon = i;
+          clickedPoint = j;
+          break;
+        }
+      }
+      if (clickedPolygon !== null) break;
+    }
+    
+    // Si pas de point cliqué, vérifier si on clique dans un polygone
+    if (clickedPolygon === null) {
+      for (let i = 0; i < bubblePolygons.length; i++) {
+        const polygon = bubblePolygons[i];
+        if (isPointInPolygon(x, y, polygon.polygon)) {
+          clickedPolygon = i;
+          break;
+        }
+      }
+    }
+    
+    setSelectedPolygon(clickedPolygon);
+    drawBubbleEditor();
+  };
+
+  // Vérifie si un point est dans un polygone
+  const isPointInPolygon = (x, y, polygon) => {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
+      
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  };
+
+  // Gère le début du drag sur le canvas
+  const handleBubbleEditorMouseDown = (event) => {
+    if (!bubbleCanvasRef.current) return;
+    
+    const canvas = bubbleCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    
+    // Vérifier si on clique sur un point de contrôle
+    let clickedPolygon = null;
+    let clickedPoint = null;
+    
+    for (let i = 0; i < bubblePolygons.length; i++) {
+      const polygon = bubblePolygons[i];
+      for (let j = 0; j < polygon.polygon.length; j++) {
+        const point = polygon.polygon[j];
+        const distance = Math.sqrt((x - point[0])**2 + (y - point[1])**2);
+        if (distance <= 15) {
+          clickedPolygon = i;
+          clickedPoint = j;
+          break;
+        }
+      }
+      if (clickedPolygon !== null) break;
+    }
+    
+    // Si pas de point cliqué, vérifier si on clique dans un polygone
+    if (clickedPolygon === null) {
+      for (let i = 0; i < bubblePolygons.length; i++) {
+        const polygon = bubblePolygons[i];
+        if (isPointInPolygon(x, y, polygon.polygon)) {
+          clickedPolygon = i;
+          break;
+        }
+      }
+    }
+    
+    if (clickedPolygon !== null) {
+      setSelectedPolygon(clickedPolygon);
+      setIsDragging(true);
+      setDragStart({x, y});
+      
+      if (clickedPoint !== null) {
+        // Drag d'un point de contrôle
+        setDragType('point');
+        setDragPolygonIndex(clickedPolygon);
+        setDragPointIndex(clickedPoint);
+      } else {
+        // Drag de toute la bulle
+        setDragType('polygon');
+        setDragPolygonIndex(clickedPolygon);
+      }
+    }
+  };
+
+  // Gère le mouvement de la souris pendant le drag
+  const handleBubbleEditorMouseMove = (event) => {
+    if (!isDragging || !bubbleCanvasRef.current) return;
+    
+    const canvas = bubbleCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    
+    const deltaX = x - dragStart.x;
+    const deltaY = y - dragStart.y;
+    
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      const newPolygons = [...bubblePolygons];
+      
+      if (dragType === 'point' && dragPolygonIndex !== null && dragPointIndex !== null) {
+        // Déplacer un point de contrôle
+        newPolygons[dragPolygonIndex].polygon[dragPointIndex][0] += deltaX;
+        newPolygons[dragPolygonIndex].polygon[dragPointIndex][1] += deltaY;
+      } else if (dragType === 'polygon' && dragPolygonIndex !== null) {
+        // Déplacer toute la bulle
+        newPolygons[dragPolygonIndex].polygon.forEach(point => {
+          point[0] += deltaX;
+          point[1] += deltaY;
+        });
+      }
+      
+      setBubblePolygons(newPolygons);
+      setDragStart({x, y});
+      drawBubbleEditor();
+    }
+  };
+
+  // Gère la fin du drag
+  const handleBubbleEditorMouseUp = () => {
+    setIsDragging(false);
+    setDragType(null);
+    setDragPolygonIndex(null);
+    setDragPointIndex(null);
+  };
+
+  // Supprime une bulle sélectionnée
+  const deleteSelectedBubble = () => {
+    if (selectedPolygon !== null) {
+      const newPolygons = bubblePolygons.filter((_, index) => index !== selectedPolygon);
+      setBubblePolygons(newPolygons);
+      setSelectedPolygon(null);
+      drawBubbleEditor();
+    }
+  };
+
+  // Retraite l'image avec les polygones modifiés
+  const retreatWithPolygons = async () => {
+    if (bubbleEditorIdx === null) return;
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", images[bubbleEditorIdx].file);
+      formData.append("polygons", JSON.stringify(bubblePolygons));
+      
+      const response = await fetch("http://localhost:8000/retreat-with-polygons", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Mettre à jour l'image dans la grille
+      const newImages = [...images];
+      const finalImageUrl = `data:image/png;base64,${data.image_base64}`;
+      const cleanedImageUrl = `data:image/png;base64,${data.cleaned_base64}`;
+      
+      // Normaliser la structure des bulles pour qu'elles soient compatibles avec l'éditeur de texte
+      const normalizedBubbles = (data.bubbles || []).map(bubble => ({
+        ...bubble,
+        translatedText: bubble.translated_text || bubble.translatedText || '',
+        ocrText: bubble.ocr_text || bubble.ocrText || '',
+        text: bubble.translated_text || bubble.translatedText || '', // Pour compatibilité
+        fontSize: 14 // Forcer la taille de police à 14 par défaut
+      }));
+      
+      newImages[bubbleEditorIdx].result = { url: finalImageUrl, blob: null };
+      newImages[bubbleEditorIdx].bubbles = normalizedBubbles;
+      newImages[bubbleEditorIdx].previewUrl = finalImageUrl;
+      // IMPORTANT: Utiliser l'image nettoyée (sans texte) pour l'éditeur de texte
+      newImages[bubbleEditorIdx].cleanedUrl = cleanedImageUrl;
+      
+      // Créer le blob pour l'image nettoyée (sans texte) - utilisé par l'éditeur de texte
+      const cleanedBytes = atob(data.cleaned_base64);
+      const cleanedArray = new Uint8Array(cleanedBytes.length);
+      for (let j = 0; j < cleanedBytes.length; j++) {
+        cleanedArray[j] = cleanedBytes.charCodeAt(j);
+      }
+      newImages[bubbleEditorIdx].cleanedBlob = new Blob([cleanedArray], { type: 'image/png' });
+      
+      // Créer le blob pour le téléchargement (utiliser l'image finale avec texte)
+      const finalBytes = atob(data.image_base64);
+      const finalArray = new Uint8Array(finalBytes.length);
+      for (let j = 0; j < finalBytes.length; j++) {
+        finalArray[j] = finalBytes.charCodeAt(j);
+      }
+      newImages[bubbleEditorIdx].result.blob = new Blob([finalArray], { type: 'image/png' });
+      
+      setImages(newImages);
+      closeBubbleEditor();
+      
+    } catch (error) {
+      console.error("Erreur lors du retraitement:", error);
+      alert("Erreur lors du retraitement de l'image");
+    }
+  };
+
   // Fonction intelligente pour calculer la taille de police
   const calculateSmartFontSize = (text, bubble) => {
     if (!text || !text.trim()) return 14;
@@ -499,42 +890,41 @@ function App() {
     const textLength = text.length;
     
     // Base de calcul selon la longueur du texte
-    let baseSize = 16; // Taille de base
+    let baseSize = 14; // Taille de base réduite pour plus de sécurité
     
     if (textLength <= 10) {
-      baseSize = 20; // Texte court = police plus grande
+      baseSize = 18; // Texte court = police plus grande
     } else if (textLength <= 20) {
-      baseSize = 18; // Texte moyen
+      baseSize = 16; // Texte moyen
     } else if (textLength <= 30) {
-      baseSize = 16; // Texte long
+      baseSize = 14; // Texte long
     } else if (textLength <= 50) {
-      baseSize = 14; // Très long texte
+      baseSize = 12; // Très long texte
     } else {
-      baseSize = 12; // Texte très long
+      baseSize = 10; // Texte très long
     }
     
     // Calculer le facteur basé sur les dimensions de la bulle
     // Plus la bulle est grande, plus on peut utiliser une grande police
     const minDimension = Math.min(bubbleWidth, bubbleHeight);
-    const maxDimension = Math.max(bubbleWidth, bubbleHeight);
     
-    // Facteur basé sur la plus petite dimension (hauteur pour les bulles hautes, largeur pour les bulles larges)
-    let dimensionFactor = minDimension / 50; // Normaliser par rapport à 50px
+    // Facteur basé sur la plus petite dimension avec une marge de sécurité
+    let dimensionFactor = (minDimension * 0.7) / 50; // 70% de la dimension pour laisser une marge
     
     // Ajuster selon le ratio largeur/hauteur
     const ratio = bubbleWidth / bubbleHeight;
     if (ratio > 2) {
       // Bulle très large, réduire un peu
-      dimensionFactor *= 0.8;
+      dimensionFactor *= 0.7;
     } else if (ratio < 0.5) {
       // Bulle très haute, réduire un peu
-      dimensionFactor *= 0.8;
+      dimensionFactor *= 0.7;
     }
     
     let finalSize = Math.round(baseSize * dimensionFactor);
     
-    // Limites de sécurité
-    finalSize = Math.max(8, Math.min(32, finalSize));
+    // Limites de sécurité plus strictes
+    finalSize = Math.max(8, Math.min(24, finalSize));
     
     console.log(`Calcul intelligent pour "${text}":`, {
       textLength: textLength,
@@ -660,7 +1050,7 @@ function App() {
                             // Réinitialiser tous les boutons quand on quitte la zone
                             const buttons = e.currentTarget.querySelectorAll('button');
                             buttons.forEach(button => {
-                              button.style.width = '50%';
+                              button.style.width = '33.33%';
                               button.style.minWidth = 'auto';
                               button.style.maxWidth = 'none';
                               const textElement = button.querySelector('.button-text');
@@ -675,7 +1065,7 @@ function App() {
                             className="btn-outline btn-outline-sm" 
                             onClick={() => handleDownload(img)}
                             style={{
-                              width: '50%',
+                              width: '33.33%',
                               position: 'relative',
                               overflow: 'hidden',
                               transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -685,20 +1075,22 @@ function App() {
                               gap: 8
                             }}
                             onMouseEnter={(e) => {
-                              // Agrandir ce bouton avec une largeur fixe pour éviter le double agrandissement
-                              e.target.style.width = '70%';
-                              e.target.style.minWidth = '120px';
-                              e.target.style.maxWidth = '70%';
+                              // Agrandir ce bouton
+                              e.target.style.width = '50%';
+                              e.target.style.minWidth = '100px';
+                              e.target.style.maxWidth = '50%';
                               
-                              // Rétrécir l'autre bouton avec la même transition
-                              const otherButton = e.target.nextElementSibling;
-                              if (otherButton) {
-                                otherButton.style.width = '30%';
-                                otherButton.style.minWidth = 'auto';
-                                otherButton.style.maxWidth = '30%';
-                              }
+                              // Rétrécir les autres boutons
+                              const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                              buttons.forEach(button => {
+                                if (button !== e.target) {
+                                  button.style.width = '25%';
+                                  button.style.minWidth = 'auto';
+                                  button.style.maxWidth = '25%';
+                                }
+                              });
                               
-                              // Afficher le texte immédiatement pour éviter le second agrandissement
+                              // Afficher le texte
                               const textElement = e.target.querySelector('.button-text');
                               if (textElement) {
                                 textElement.style.transform = 'translateX(0)';
@@ -707,17 +1099,17 @@ function App() {
                             }}
                             onMouseLeave={(e) => {
                               // Réinitialiser ce bouton
-                              e.target.style.width = '50%';
+                              e.target.style.width = '33.33%';
                               e.target.style.minWidth = 'auto';
                               e.target.style.maxWidth = 'none';
                               
-                              // Réinitialiser l'autre bouton
-                              const otherButton = e.target.nextElementSibling;
-                              if (otherButton) {
-                                otherButton.style.width = '50%';
-                                otherButton.style.minWidth = 'auto';
-                                otherButton.style.maxWidth = 'none';
-                              }
+                              // Réinitialiser les autres boutons
+                              const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                              buttons.forEach(button => {
+                                button.style.width = '33.33%';
+                                button.style.minWidth = 'auto';
+                                button.style.maxWidth = 'none';
+                              });
                               
                               const textElement = e.target.querySelector('.button-text');
                               if (textElement) {
@@ -745,7 +1137,7 @@ function App() {
                            className="btn-outline btn-outline-sm btn-edit" 
                            onClick={() => openEditModal(img, idx)}
                            style={{
-                             width: '50%',
+                             width: '33.33%',
                              position: 'relative',
                              overflow: 'hidden',
                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -755,20 +1147,22 @@ function App() {
                              gap: 8
                            }}
                            onMouseEnter={(e) => {
-                             // Agrandir ce bouton avec une largeur fixe pour éviter le double agrandissement
-                             e.target.style.width = '70%';
-                             e.target.style.minWidth = '120px';
-                             e.target.style.maxWidth = '70%';
+                             // Agrandir ce bouton
+                             e.target.style.width = '50%';
+                             e.target.style.minWidth = '100px';
+                             e.target.style.maxWidth = '50%';
                              
-                             // Rétrécir l'autre bouton avec la même transition
-                             const otherButton = e.target.previousElementSibling;
-                             if (otherButton) {
-                               otherButton.style.width = '30%';
-                               otherButton.style.minWidth = 'auto';
-                               otherButton.style.maxWidth = '30%';
-                             }
+                             // Rétrécir les autres boutons
+                             const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                             buttons.forEach(button => {
+                               if (button !== e.target) {
+                                 button.style.width = '25%';
+                                 button.style.minWidth = 'auto';
+                                 button.style.maxWidth = '25%';
+                               }
+                             });
                              
-                             // Afficher le texte immédiatement pour éviter le second agrandissement
+                             // Afficher le texte
                              const textElement = e.target.querySelector('.button-text');
                              if (textElement) {
                                textElement.style.transform = 'translateX(0)';
@@ -777,17 +1171,17 @@ function App() {
                            }}
                            onMouseLeave={(e) => {
                              // Réinitialiser ce bouton
-                             e.target.style.width = '50%';
+                             e.target.style.width = '33.33%';
                              e.target.style.minWidth = 'auto';
                              e.target.style.maxWidth = 'none';
                              
-                             // Réinitialiser l'autre bouton
-                             const otherButton = e.target.previousElementSibling;
-                             if (otherButton) {
-                               otherButton.style.width = '50%';
-                               otherButton.style.minWidth = 'auto';
-                               otherButton.style.maxWidth = 'none';
-                             }
+                             // Réinitialiser les autres boutons
+                             const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                             buttons.forEach(button => {
+                               button.style.width = '33.33%';
+                               button.style.minWidth = 'auto';
+                               button.style.maxWidth = 'none';
+                             });
                              
                              const textElement = e.target.querySelector('.button-text');
                              if (textElement) {
@@ -810,6 +1204,78 @@ function App() {
                            >
                              Éditer
                            </span>
+                        </button>
+                        <button 
+                          className="btn-outline btn-outline-sm btn-bubble-edit" 
+                          onClick={() => openBubbleEditor(img, idx)}
+                          style={{
+                            width: '33.33%',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8
+                          }}
+                          onMouseEnter={(e) => {
+                            // Agrandir ce bouton
+                            e.target.style.width = '50%';
+                            e.target.style.minWidth = '100px';
+                            e.target.style.maxWidth = '50%';
+                            
+                            // Rétrécir les autres boutons
+                            const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                            buttons.forEach(button => {
+                              if (button !== e.target) {
+                                button.style.width = '25%';
+                                button.style.minWidth = 'auto';
+                                button.style.maxWidth = '25%';
+                              }
+                            });
+                            
+                            // Afficher le texte
+                            const textElement = e.target.querySelector('.button-text');
+                            if (textElement) {
+                              textElement.style.transform = 'translateX(0)';
+                              textElement.style.opacity = '1';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            // Réinitialiser ce bouton
+                            e.target.style.width = '33.33%';
+                            e.target.style.minWidth = 'auto';
+                            e.target.style.maxWidth = 'none';
+                            
+                            // Réinitialiser les autres boutons
+                            const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                            buttons.forEach(button => {
+                              button.style.width = '33.33%';
+                              button.style.minWidth = 'auto';
+                              button.style.maxWidth = 'none';
+                            });
+                            
+                            const textElement = e.target.querySelector('.button-text');
+                            if (textElement) {
+                              textElement.style.transform = 'translateX(-20px)';
+                              textElement.style.opacity = '0';
+                            }
+                          }}
+                        >
+                          <span style={{fontSize: '1.2rem', transition: 'none'}}>🛠</span>
+                          <span 
+                            className="button-text"
+                            style={{
+                              transform: 'translateX(-20px)',
+                              opacity: '0',
+                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            Éditer bulles
+                          </span>
                         </button>
                       </div>
                     </>
@@ -986,6 +1452,238 @@ function App() {
                      Enregistrer
                    </button>
                 </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modale d'édition de bulles */}
+      {bubbleEditorOpen && (
+        <div className="modal-bg" onClick={closeBubbleEditor}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{
+            width: '95vw',
+            height: '90vh',
+            maxWidth: 1800,
+            maxHeight: 1000,
+            minWidth: 1000,
+            minHeight: 500,
+            display: 'flex',
+            flexDirection: 'row',
+            gap: 24,
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            padding: 0
+          }}>
+            <button className="modal-close" onClick={closeBubbleEditor}>✕</button>
+            
+            {/* Zone d'édition à gauche */}
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 0,
+              minHeight: 0,
+              height: '100%',
+              overflow: 'auto',
+              padding: '20px'
+            }}>
+              <div style={{
+                marginBottom: 16,
+                color: darkMode ? '#a78bfa' : '#6366f1',
+                fontWeight: 600,
+                fontSize: 18
+              }}>
+                Éditeur de bulles - {bubblePolygons.length} bulle{bubblePolygons.length > 1 ? 's' : ''} détectée{bubblePolygons.length > 1 ? 's' : ''}
+              </div>
+              
+              <canvas
+                ref={bubbleCanvasRef}
+                onClick={handleBubbleEditorClick}
+                onMouseDown={handleBubbleEditorMouseDown}
+                onMouseMove={handleBubbleEditorMouseMove}
+                onMouseUp={handleBubbleEditorMouseUp}
+                onMouseLeave={handleBubbleEditorMouseUp}
+                style={{
+                  maxWidth: 'calc(95vw - 420px)',
+                  maxHeight: '70vh',
+                  width: 'auto',
+                  height: 'auto',
+                  borderRadius: 12,
+                  border: '2px solid #a78bfa',
+                  background: darkMode ? '#fff' : '#f8fafc',
+                  boxShadow: '0 4px 24px 0 rgba(124,58,237,0.12)',
+                  display: 'block',
+                  margin: '0 auto',
+                  cursor: isDragging ? 'grabbing' : 'pointer'
+                }}
+              />
+              
+              <div style={{
+                marginTop: 16,
+                color: darkMode ? '#c4b5fd' : '#7c3aed',
+                fontSize: 14,
+                textAlign: 'center',
+                maxWidth: 600
+              }}>
+                💡 Cliquez sur une bulle pour la sélectionner • Glissez-déposez les bulles entières • Glissez-déposez les points pour les redimensionner • Utilisez les boutons à droite pour modifier
+              </div>
+            </div>
+            
+            {/* Zone de contrôle à droite */}
+            <div style={{
+              width: 380,
+              minWidth: 350,
+              maxWidth: 420,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+              overflowY: 'auto',
+              background: darkMode ? 'rgba(24, 28, 42, 0.97)' : 'rgba(248, 250, 252, 0.97)',
+              borderLeft: darkMode ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(124, 58, 237, 0.2)',
+              padding: '20px 16px 16px 16px',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{
+                color: darkMode ? '#a78bfa' : '#6366f1',
+                fontWeight: 600,
+                fontSize: 16,
+                marginBottom: 8
+              }}>
+                Actions
+              </div>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                <button 
+                  style={{
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
+                    border: '1.5px solid #10b981',
+                    borderRadius: 8,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    transform: 'translateY(0)',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#059669';
+                    e.target.style.borderColor = '#059669';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#10b981';
+                    e.target.style.borderColor = '#10b981';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                  }}
+                  onClick={retreatWithPolygons}
+                >
+                  🔄 Retraiter avec les bulles modifiées
+                </button>
+                
+                <button 
+                  style={{
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    borderColor: '#ef4444',
+                    color: '#ef4444',
+                    backgroundColor: 'transparent',
+                    border: '1.5px solid #ef4444',
+                    borderRadius: 8,
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#dc2626';
+                    e.target.style.color = '#ffffff';
+                    e.target.style.borderColor = '#dc2626';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = '#ef4444';
+                    e.target.style.borderColor = '#ef4444';
+                  }}
+                  onClick={deleteSelectedBubble}
+                  disabled={selectedPolygon === null}
+                >
+                  🗑️ Supprimer la bulle sélectionnée
+                </button>
+              </div>
+              
+              {selectedPolygon !== null && (
+                <div style={{
+                  marginTop: 20,
+                  padding: 16,
+                  backgroundColor: darkMode ? 'rgba(124, 58, 237, 0.1)' : 'rgba(124, 58, 237, 0.05)',
+                  borderRadius: 8,
+                  border: `1px solid ${darkMode ? 'rgba(124, 58, 237, 0.3)' : 'rgba(124, 58, 237, 0.2)'}`
+                }}>
+                  <div style={{
+                    color: darkMode ? '#a78bfa' : '#7c3aed',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    marginBottom: 8
+                  }}>
+                    Bulle sélectionnée #{selectedPolygon + 1}
+                  </div>
+                  <div style={{
+                    color: darkMode ? '#d1d5db' : '#6b7280',
+                    fontSize: 12
+                  }}>
+                    Classe: {bubblePolygons[selectedPolygon]?.class === 0 ? 'Bulles' : 
+                             bubblePolygons[selectedPolygon]?.class === 1 ? 'Texte flottant' : 'Narration'}
+                  </div>
+                  <div style={{
+                    color: darkMode ? '#d1d5db' : '#6b7280',
+                    fontSize: 12
+                  }}>
+                    Confiance: {(bubblePolygons[selectedPolygon]?.confidence * 100).toFixed(1)}%
+                  </div>
+                </div>
+              )}
+              
+              <div style={{
+                marginTop: 'auto',
+                display: 'flex',
+                gap: 12
+              }}>
+                <button 
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    borderColor: '#6b7280',
+                    color: '#6b7280',
+                    backgroundColor: 'transparent',
+                    border: '1.5px solid #6b7280',
+                    borderRadius: 8,
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#4b5563';
+                    e.target.style.color = '#ffffff';
+                    e.target.style.borderColor = '#4b5563';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = '#6b7280';
+                    e.target.style.borderColor = '#6b7280';
+                  }}
+                  onClick={closeBubbleEditor}
+                >
+                  Annuler
+                </button>
+              </div>
             </div>
           </div>
         </div>
