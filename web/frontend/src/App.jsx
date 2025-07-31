@@ -32,6 +32,7 @@ function App() {
   const [dragPointIndex, setDragPointIndex] = useState(null);
   const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const [bubbleEditorCanvas, setBubbleEditorCanvas] = useState(null);
+  const [isRetreating, setIsRetreating] = useState(false);
   
   const canvasRef = useRef(null);
   const bubbleCanvasRef = useRef(null);
@@ -818,6 +819,8 @@ function App() {
   const retreatWithPolygons = async () => {
     if (bubbleEditorIdx === null) return;
     
+    setIsRetreating(true);
+    
     try {
       const formData = new FormData();
       formData.append("file", images[bubbleEditorIdx].file);
@@ -876,6 +879,8 @@ function App() {
     } catch (error) {
       console.error("Erreur lors du retraitement:", error);
       alert("Erreur lors du retraitement de l'image");
+    } finally {
+      setIsRetreating(false);
     }
   };
 
@@ -1640,8 +1645,60 @@ function App() {
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            padding: 0
+            padding: 0,
+            position: 'relative'
           }}>
+            {/* Overlay de chargement */}
+            {isRetreating && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                borderRadius: '12px'
+              }}>
+                <div style={{
+                  backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                  padding: '24px 32px',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '16px',
+                  border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid #10b981',
+                    borderTop: '3px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  <div style={{
+                    color: darkMode ? '#f9fafb' : '#1f2937',
+                    fontSize: '16px',
+                    fontWeight: '600'
+                  }}>
+                    Retraitement en cours...
+                  </div>
+                  <div style={{
+                    color: darkMode ? '#9ca3af' : '#6b7280',
+                    fontSize: '14px',
+                    textAlign: 'center'
+                  }}>
+                    Veuillez patienter pendant que l'image est retraitée avec les modifications des bulles.
+                  </div>
+                </div>
+              </div>
+            )}
             <button className="modal-close" onClick={closeBubbleEditor}>✕</button>
             
             {/* Zone d'édition à gauche */}
@@ -1729,30 +1786,64 @@ function App() {
                     padding: '12px 16px',
                     fontSize: 15,
                     fontWeight: 500,
-                    backgroundColor: '#10b981',
+                    backgroundColor: isRetreating ? '#6b7280' : '#10b981',
                     color: '#ffffff',
-                    border: '1.5px solid #10b981',
+                    border: `1.5px solid ${isRetreating ? '#6b7280' : '#10b981'}`,
                     borderRadius: 8,
                     transition: 'all 0.3s ease',
-                    cursor: 'pointer',
+                    cursor: isRetreating ? 'not-allowed' : 'pointer',
                     transform: 'translateY(0)',
-                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)'
+                    boxShadow: isRetreating ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.2)',
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#059669';
-                    e.target.style.borderColor = '#059669';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.4)';
+                    if (!isRetreating) {
+                      e.target.style.backgroundColor = '#059669';
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.4)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#10b981';
-                    e.target.style.borderColor = '#10b981';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                    if (!isRetreating) {
+                      e.target.style.backgroundColor = '#10b981';
+                      e.target.style.borderColor = '#10b981';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                    }
                   }}
-                  onClick={retreatWithPolygons}
+                  onClick={isRetreating ? undefined : retreatWithPolygons}
+                  disabled={isRetreating}
                 >
-                  🔄 Retraiter avec les bulles modifiées
+                  {isRetreating ? (
+                    <>
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1
+                      }}>
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          border: '2px solid #ffffff',
+                          borderTop: '2px solid transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }}></div>
+                      </div>
+                      <span style={{ opacity: 0.7 }}>⏳ Retraitement en cours...</span>
+                    </>
+                  ) : (
+                    '🔄 Retraiter avec les bulles modifiées'
+                  )}
                 </button>
                 
                 <button 
