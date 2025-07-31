@@ -53,6 +53,41 @@ function App() {
     }
   }, [bubblePolygons, selectedPolygon, bubbleEditorOpen]);
 
+  // Gestion des raccourcis clavier dans l'éditeur de bulles
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!bubbleEditorOpen) return;
+      
+      // Empêcher les raccourcis par défaut du navigateur
+      if (e.key === 'Delete' || e.key === 'Insert') {
+        e.preventDefault();
+      }
+      
+      switch (e.key) {
+        case 'Delete':
+          // Supprimer la bulle sélectionnée
+          if (selectedPolygon !== null) {
+            deleteSelectedBubble();
+          }
+          break;
+        case 'Insert':
+          // Ajouter une nouvelle bulle
+          addNewBubble();
+          break;
+        default:
+          break;
+      }
+    };
+
+    // Ajouter l'écouteur d'événements
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Nettoyer l'écouteur d'événements
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [bubbleEditorOpen, selectedPolygon, bubblePolygons, bubbleEditorCanvas]);
+
   const handleFileChange = (e) => {
     const selected = Array.from(e.target.files);
     const allFiles = [...files];
@@ -1855,6 +1890,15 @@ function App() {
                 maxWidth: 600
               }}>
                 💡 Cliquez sur une bulle pour la sélectionner • Glissez-déposez les bulles entières • Glissez-déposez les points pour les redimensionner • Utilisez les boutons à droite pour modifier
+              </div>
+              <div style={{
+                marginTop: 8,
+                color: darkMode ? '#9ca3af' : '#6b7280',
+                fontSize: 12,
+                textAlign: 'center',
+                maxWidth: 600
+              }}>
+                ⌨️ Raccourcis : <strong>Suppr</strong> pour supprimer • <strong>Ins</strong> pour ajouter
               </div>
             </div>
             
