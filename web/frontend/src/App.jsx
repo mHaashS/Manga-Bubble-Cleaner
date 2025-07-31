@@ -1038,7 +1038,7 @@ function App() {
                         )}
                       </div>
                       <div className="image-name-sm">{img.file.name}</div>
-                                             <div 
+                                                                   <div 
                          style={{
                            display: 'flex', 
                            gap: 8, 
@@ -1046,17 +1046,21 @@ function App() {
                            position: 'relative',
                            overflow: 'hidden'
                          }}
-                                                   onMouseLeave={(e) => {
+                         onMouseLeave={(e) => {
                             // Réinitialiser tous les boutons quand on quitte la zone
                             const buttons = e.currentTarget.querySelectorAll('button');
                             buttons.forEach(button => {
                               button.style.width = '33.33%';
                               button.style.minWidth = 'auto';
-                              button.style.maxWidth = 'none';
+                              const emojiElement = button.querySelector('.button-emoji');
                               const textElement = button.querySelector('.button-text');
+                              if (emojiElement) {
+                                emojiElement.style.opacity = '1';
+                                emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                              }
                               if (textElement) {
-                                textElement.style.transform = 'translateX(-20px)';
                                 textElement.style.opacity = '0';
+                                textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
                               }
                             });
                           }}
@@ -1066,68 +1070,123 @@ function App() {
                             onClick={() => handleDownload(img)}
                             style={{
                               width: '33.33%',
+                              minWidth: 'auto',
+                              height: '36px',
                               position: 'relative',
                               overflow: 'hidden',
                               transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: 8
+                              maxWidth: 'none'
                             }}
                             onMouseEnter={(e) => {
+                              // Réinitialiser d'abord tous les boutons
+                              const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                              buttons.forEach(button => {
+                                // Réinitialiser la taille
+                                button.style.width = '33.33%';
+                                button.style.minWidth = 'auto';
+                                
+                                // Réinitialiser l'emoji et le texte
+                                const emojiElement = button.querySelector('.button-emoji');
+                                const textElement = button.querySelector('.button-text');
+                                if (emojiElement) {
+                                  emojiElement.style.opacity = '1';
+                                  emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                                }
+                                if (textElement) {
+                                  textElement.style.opacity = '0';
+                                  textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                                }
+                              });
+                              
                               // Agrandir ce bouton
                               e.target.style.width = '50%';
                               e.target.style.minWidth = '100px';
-                              e.target.style.maxWidth = '50%';
                               
                               // Rétrécir les autres boutons
-                              const buttons = e.currentTarget.parentElement.querySelectorAll('button');
                               buttons.forEach(button => {
                                 if (button !== e.target) {
                                   button.style.width = '25%';
                                   button.style.minWidth = 'auto';
-                                  button.style.maxWidth = '25%';
                                 }
                               });
                               
-                              // Afficher le texte
+                              // Masquer l'emoji et afficher le texte pour ce bouton
+                              const emojiElement = e.target.querySelector('.button-emoji');
                               const textElement = e.target.querySelector('.button-text');
+                              if (emojiElement) {
+                                emojiElement.style.opacity = '0';
+                                emojiElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                              }
                               if (textElement) {
-                                textElement.style.transform = 'translateX(0)';
                                 textElement.style.opacity = '1';
+                                textElement.style.transform = 'translate(-50%, -50%) scale(1)';
                               }
                             }}
                             onMouseLeave={(e) => {
-                              // Réinitialiser ce bouton
-                              e.target.style.width = '33.33%';
-                              e.target.style.minWidth = 'auto';
-                              e.target.style.maxWidth = 'none';
-                              
-                              // Réinitialiser les autres boutons
-                              const buttons = e.currentTarget.parentElement.querySelectorAll('button');
-                              buttons.forEach(button => {
-                                button.style.width = '33.33%';
-                                button.style.minWidth = 'auto';
-                                button.style.maxWidth = 'none';
-                              });
-                              
-                              const textElement = e.target.querySelector('.button-text');
-                              if (textElement) {
-                                textElement.style.transform = 'translateX(-20px)';
-                                textElement.style.opacity = '0';
-                              }
+                              // Utiliser un délai pour permettre au onMouseEnter du nouveau bouton de s'exécuter
+                              setTimeout(() => {
+                                // Vérifier si aucun bouton n'est survolé
+                                const container = e.currentTarget?.parentElement;
+                                if (!container) return;
+                                
+                                const hoveredButton = container.querySelector(':hover');
+                                
+                                if (!hoveredButton) {
+                                  // Réinitialiser ce bouton
+                                  e.target.style.width = '33.33%';
+                                  e.target.style.minWidth = 'auto';
+                                  
+                                  // Réinitialiser les autres boutons
+                                  const buttons = container.querySelectorAll('button');
+                                  buttons.forEach(button => {
+                                    button.style.width = '33.33%';
+                                    button.style.minWidth = 'auto';
+                                  });
+                                  
+                                  // Afficher l'emoji et masquer le texte
+                                  const emojiElement = e.target.querySelector('.button-emoji');
+                                  const textElement = e.target.querySelector('.button-text');
+                                  if (emojiElement) {
+                                    emojiElement.style.opacity = '1';
+                                    emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                                  }
+                                  if (textElement) {
+                                    textElement.style.opacity = '0';
+                                    textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                                  }
+                                }
+                              }, 10);
                             }}
                           >
-                                                       <span style={{fontSize: '1.2rem', transition: 'none'}}>⬇</span>
+                            <span 
+                              className="button-emoji"
+                              style={{
+                                fontSize: '1.2rem',
+                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%) scale(1)',
+                                opacity: '1'
+                              }}
+                            >
+                              ⬇
+                            </span>
                             <span 
                               className="button-text"
                               style={{
-                                transform: 'translateX(-20px)',
                                 opacity: '0',
+                                transform: 'translate(-50%, -50%) scale(0.8)',
                                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%'
                               }}
                             >
                               Télécharger
@@ -1138,141 +1197,249 @@ function App() {
                            onClick={() => openEditModal(img, idx)}
                            style={{
                              width: '33.33%',
+                             minWidth: 'auto',
+                             height: '36px',
                              position: 'relative',
                              overflow: 'hidden',
                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                              display: 'flex',
                              alignItems: 'center',
                              justifyContent: 'center',
-                             gap: 8
+                             maxWidth: 'none'
                            }}
                            onMouseEnter={(e) => {
+                             // Réinitialiser d'abord tous les boutons
+                             const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                             buttons.forEach(button => {
+                               // Réinitialiser la taille
+                               button.style.width = '33.33%';
+                               button.style.minWidth = 'auto';
+                               
+                               // Réinitialiser l'emoji et le texte
+                               const emojiElement = button.querySelector('.button-emoji');
+                               const textElement = button.querySelector('.button-text');
+                               if (emojiElement) {
+                                 emojiElement.style.opacity = '1';
+                                 emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                               }
+                               if (textElement) {
+                                 textElement.style.opacity = '0';
+                                 textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                               }
+                             });
+                             
                              // Agrandir ce bouton
                              e.target.style.width = '50%';
                              e.target.style.minWidth = '100px';
-                             e.target.style.maxWidth = '50%';
                              
                              // Rétrécir les autres boutons
-                             const buttons = e.currentTarget.parentElement.querySelectorAll('button');
                              buttons.forEach(button => {
                                if (button !== e.target) {
                                  button.style.width = '25%';
                                  button.style.minWidth = 'auto';
-                                 button.style.maxWidth = '25%';
                                }
                              });
                              
-                             // Afficher le texte
+                             // Masquer l'emoji et afficher le texte pour ce bouton
+                             const emojiElement = e.target.querySelector('.button-emoji');
                              const textElement = e.target.querySelector('.button-text');
+                             if (emojiElement) {
+                               emojiElement.style.opacity = '0';
+                               emojiElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                             }
                              if (textElement) {
-                               textElement.style.transform = 'translateX(0)';
                                textElement.style.opacity = '1';
+                               textElement.style.transform = 'translate(-50%, -50%) scale(1)';
                              }
                            }}
                            onMouseLeave={(e) => {
-                             // Réinitialiser ce bouton
-                             e.target.style.width = '33.33%';
-                             e.target.style.minWidth = 'auto';
-                             e.target.style.maxWidth = 'none';
-                             
-                             // Réinitialiser les autres boutons
-                             const buttons = e.currentTarget.parentElement.querySelectorAll('button');
-                             buttons.forEach(button => {
-                               button.style.width = '33.33%';
-                               button.style.minWidth = 'auto';
-                               button.style.maxWidth = 'none';
-                             });
-                             
-                             const textElement = e.target.querySelector('.button-text');
-                             if (textElement) {
-                               textElement.style.transform = 'translateX(-20px)';
-                               textElement.style.opacity = '0';
-                             }
+                             // Utiliser un délai pour permettre au onMouseEnter du nouveau bouton de s'exécuter
+                             setTimeout(() => {
+                               // Vérifier si aucun bouton n'est survolé
+                               const container = e.currentTarget?.parentElement;
+                               if (!container) return;
+                               const hoveredButton = container.querySelector(':hover');
+                               
+                               if (!hoveredButton) {
+                                 // Réinitialiser ce bouton
+                                 e.target.style.width = '33.33%';
+                                 e.target.style.minWidth = 'auto';
+                                 
+                                 // Réinitialiser les autres boutons
+                                 const buttons = container.querySelectorAll('button');
+                                 buttons.forEach(button => {
+                                   button.style.width = '33.33%';
+                                   button.style.minWidth = 'auto';
+                                 });
+                                 
+                                 // Afficher l'emoji et masquer le texte
+                                 const emojiElement = e.target.querySelector('.button-emoji');
+                                 const textElement = e.target.querySelector('.button-text');
+                                 if (emojiElement) {
+                                   emojiElement.style.opacity = '1';
+                                   emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                                 }
+                                 if (textElement) {
+                                   textElement.style.opacity = '0';
+                                   textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                                 }
+                               }
+                             }, 10);
                            }}
                          >
-                                                     <span style={{fontSize: '1.2rem', transition: 'none'}}>✏️</span>
                            <span 
-                             className="button-text"
+                             className="button-emoji"
                              style={{
-                               transform: 'translateX(-20px)',
-                               opacity: '0',
+                               fontSize: '1.2rem',
                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                               fontSize: '0.8rem',
-                               fontWeight: 500,
-                               whiteSpace: 'nowrap'
+                               position: 'absolute',
+                               top: '50%',
+                               left: '50%',
+                               transform: 'translate(-50%, -50%) scale(1)',
+                               opacity: '1'
                              }}
                            >
-                             Éditer
+                             ✏️
                            </span>
+                                                        <span 
+                               className="button-text"
+                               style={{
+                                 opacity: '0',
+                                 transform: 'translate(-50%, -50%) scale(0.8)',
+                                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                 fontSize: '0.8rem',
+                                 fontWeight: 500,
+                                 whiteSpace: 'nowrap',
+                                 position: 'absolute',
+                                 top: '50%',
+                                 left: '50%'
+                               }}
+                             >
+                               Éditer texte
+                             </span>
                         </button>
                         <button 
                           className="btn-outline btn-outline-sm btn-bubble-edit" 
                           onClick={() => openBubbleEditor(img, idx)}
                           style={{
                             width: '33.33%',
+                            minWidth: 'auto',
+                            height: '36px',
                             position: 'relative',
                             overflow: 'hidden',
                             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 8
+                            maxWidth: 'none'
                           }}
                           onMouseEnter={(e) => {
+                            // Réinitialiser d'abord tous les boutons
+                            const buttons = e.currentTarget.parentElement.querySelectorAll('button');
+                            buttons.forEach(button => {
+                              // Réinitialiser la taille
+                              button.style.width = '33.33%';
+                              button.style.minWidth = 'auto';
+                              
+                              // Réinitialiser l'emoji et le texte
+                              const emojiElement = button.querySelector('.button-emoji');
+                              const textElement = button.querySelector('.button-text');
+                              if (emojiElement) {
+                                emojiElement.style.opacity = '1';
+                                emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                              }
+                              if (textElement) {
+                                textElement.style.opacity = '0';
+                                textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                              }
+                            });
+                            
                             // Agrandir ce bouton
                             e.target.style.width = '50%';
                             e.target.style.minWidth = '100px';
-                            e.target.style.maxWidth = '50%';
                             
                             // Rétrécir les autres boutons
-                            const buttons = e.currentTarget.parentElement.querySelectorAll('button');
                             buttons.forEach(button => {
                               if (button !== e.target) {
                                 button.style.width = '25%';
                                 button.style.minWidth = 'auto';
-                                button.style.maxWidth = '25%';
                               }
                             });
                             
-                            // Afficher le texte
+                            // Masquer l'emoji et afficher le texte pour ce bouton
+                            const emojiElement = e.target.querySelector('.button-emoji');
                             const textElement = e.target.querySelector('.button-text');
+                            if (emojiElement) {
+                              emojiElement.style.opacity = '0';
+                              emojiElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                            }
                             if (textElement) {
-                              textElement.style.transform = 'translateX(0)';
                               textElement.style.opacity = '1';
+                              textElement.style.transform = 'translate(-50%, -50%) scale(1)';
                             }
                           }}
                           onMouseLeave={(e) => {
-                            // Réinitialiser ce bouton
-                            e.target.style.width = '33.33%';
-                            e.target.style.minWidth = 'auto';
-                            e.target.style.maxWidth = 'none';
-                            
-                            // Réinitialiser les autres boutons
-                            const buttons = e.currentTarget.parentElement.querySelectorAll('button');
-                            buttons.forEach(button => {
-                              button.style.width = '33.33%';
-                              button.style.minWidth = 'auto';
-                              button.style.maxWidth = 'none';
-                            });
-                            
-                            const textElement = e.target.querySelector('.button-text');
-                            if (textElement) {
-                              textElement.style.transform = 'translateX(-20px)';
-                              textElement.style.opacity = '0';
-                            }
+                            // Utiliser un délai pour permettre au onMouseEnter du nouveau bouton de s'exécuter
+                            setTimeout(() => {
+                              // Vérifier si aucun bouton n'est survolé
+                              const container = e.currentTarget?.parentElement;
+                              if (!container) return;
+                              const hoveredButton = container.querySelector(':hover');
+                              
+                              if (!hoveredButton) {
+                                // Réinitialiser ce bouton
+                                e.target.style.width = '33.33%';
+                                e.target.style.minWidth = 'auto';
+                                
+                                // Réinitialiser les autres boutons
+                                const buttons = container.querySelectorAll('button');
+                                buttons.forEach(button => {
+                                  button.style.width = '33.33%';
+                                  button.style.minWidth = 'auto';
+                                });
+                                
+                                // Afficher l'emoji et masquer le texte
+                                const emojiElement = e.target.querySelector('.button-emoji');
+                                const textElement = e.target.querySelector('.button-text');
+                                if (emojiElement) {
+                                  emojiElement.style.opacity = '1';
+                                  emojiElement.style.transform = 'translate(-50%, -50%) scale(1)';
+                                }
+                                if (textElement) {
+                                  textElement.style.opacity = '0';
+                                  textElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                                }
+                              }
+                            }, 10);
                           }}
                         >
-                          <span style={{fontSize: '1.2rem', transition: 'none'}}>🛠</span>
+                          <span 
+                            className="button-emoji"
+                            style={{
+                              fontSize: '1.2rem',
+                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%) scale(1)',
+                              opacity: '1'
+                            }}
+                          >
+                            🛠
+                          </span>
                           <span 
                             className="button-text"
-                            style={{
-                              transform: 'translateX(-20px)',
-                              opacity: '0',
-                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                              fontSize: '0.8rem',
-                              fontWeight: 500,
-                              whiteSpace: 'nowrap'
-                            }}
+                                                                                 style={{
+                             opacity: '0',
+                             transform: 'translate(-50%, -50%) scale(0.8)',
+                             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                             fontSize: '0.8rem',
+                             fontWeight: 500,
+                             whiteSpace: 'nowrap',
+                             position: 'absolute',
+                             top: '50%',
+                             left: '50%'
+                           }}
                           >
                             Éditer bulles
                           </span>
