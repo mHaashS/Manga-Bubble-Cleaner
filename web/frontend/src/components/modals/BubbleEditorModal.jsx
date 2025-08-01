@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getBubblePolygons, retreatWithPolygons } from '../../services/api';
+import authService from '../../services/authService';
 import { isPointInPolygon } from '../../utils/canvasUtils';
 import { base64ToBlob } from '../../utils/fileUtils';
 
@@ -15,6 +15,7 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const [bubbleEditorCanvas, setBubbleEditorCanvas] = useState(null);
   const [isRetreating, setIsRetreating] = useState(false);
+  const [error, setError] = useState(null);
   
   const bubbleCanvasRef = useRef(null);
 
@@ -23,6 +24,7 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
     if (isOpen && imageIndex !== null && images[imageIndex]) {
       const img = images[imageIndex];
       setSelectedPolygon(null);
+      setError(null); // Nettoyer les erreurs à l'ouverture
       setOriginalImageUrl(URL.createObjectURL(img.file));
       
       // Charger l'image originale pour obtenir ses dimensions
@@ -54,8 +56,11 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   // === FONCTIONS ===
   const loadBubblePolygons = async (file) => {
     try {
-      const data = await getBubblePolygons(file);
-      setBubblePolygons(data.polygons || []);
+      const result = await authService.getBubblePolygons(file);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      setBubblePolygons(result.result.polygons || []);
       
       // Redessiner avec les polygones une fois qu'ils sont chargés
       setTimeout(() => {
@@ -63,8 +68,7 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
       }, 50);
     } catch (error) {
       console.error("Erreur lors du chargement des polygones:", error);
-      alert("Erreur lors du chargement des polygones de bulles");
-      onClose();
+      setError(error.message || "Erreur lors du chargement des polygones de bulles");
     }
   };
 
@@ -319,7 +323,13 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
     setIsRetreating(true);
     
     try {
-      const data = await retreatWithPolygons(images[imageIndex].file, bubblePolygons);
+      const result = await authService.retreatWithPolygons(images[imageIndex].file, bubblePolygons);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      const data = result.result;
       
       // Mettre à jour l'image dans la grille
       const newImages = [...images];
@@ -352,7 +362,7 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
       
     } catch (error) {
       console.error("Erreur lors du retraitement:", error);
-      alert("Erreur lors du retraitement de l'image");
+      setError(error.message || "Erreur lors du retraitement de l'image");
     } finally {
       setIsRetreating(false);
     }
@@ -434,6 +444,48 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
               }}>
                 Veuillez patienter pendant que l'image est retraitée avec les modifications des bulles.
               </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Affichage de l'erreur */}
+        {error && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#dc2626',
+            padding: '16px 24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1001,
+            maxWidth: '80%',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <span style={{ fontSize: '18px' }}>⚠️</span>
+              <span style={{ fontWeight: '600' }}>{error}</span>
+              <button 
+                onClick={() => setError(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  marginLeft: '12px'
+                }}
+              >
+                ✕
+              </button>
             </div>
           </div>
         )}

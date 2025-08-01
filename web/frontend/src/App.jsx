@@ -7,6 +7,10 @@ import ProgressBar from './components/ui/ProgressBar';
 import ImagePreviewModal from './components/modals/ImagePreviewModal';
 import TextEditorModal from './components/modals/TextEditorModal';
 import BubbleEditorModal from './components/modals/BubbleEditorModal';
+import LoginModal from './components/LoginModal';
+import RegisterModal from './components/RegisterModal';
+import QuotaDisplay from './components/QuotaDisplay';
+import authService from './services/authService';
 
 function App() {
   // === ÉTATS PRINCIPAUX ===
@@ -15,6 +19,11 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
+  
+  // === ÉTATS D'AUTHENTIFICATION ===
+  const [user, setUser] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   
   // === ÉTATS DES MODALES ===
   const [modalOpen, setModalOpen] = useState(false);
@@ -34,6 +43,48 @@ function App() {
     document.body.className = darkMode ? 'dark-mode' : '';
     localStorage.setItem('darkMode', darkMode.toString());
   }, [darkMode]);
+
+  // === GESTION DE L'AUTHENTIFICATION ===
+  useEffect(() => {
+    const currentUser = authService.getUser();
+    const token = authService.getToken();
+    console.log("🔍 État de l'authentification:", { user: currentUser, token: token ? "Présent" : "Absent" });
+    
+    if (currentUser && token) {
+      setUser(currentUser);
+      console.log("✅ Utilisateur connecté:", currentUser.username);
+    } else {
+      console.log("❌ Utilisateur non connecté");
+      setUser(null);
+    }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    setShowLoginModal(false);
+  };
+
+  const handleRegisterSuccess = (userData) => {
+    setUser(userData);
+    setShowRegisterModal(false);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setUser(null);
+    setFiles([]);
+    setImages([]);
+  };
+
+  const switchToRegister = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(true);
+  };
+
+  const switchToLogin = () => {
+    setShowRegisterModal(false);
+    setShowLoginModal(true);
+  };
 
   // === GESTION DES RACCOURCIS CLAVIER ===
   useEffect(() => {
@@ -130,6 +181,13 @@ function App() {
     e.preventDefault();
     if (files.length === 0) return;
 
+    // Vérifier l'authentification
+    if (!user || !authService.isAuthenticated()) {
+      console.log("❌ Utilisateur non authentifié, affichage de la modale de connexion");
+      setShowLoginModal(true);
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
 
@@ -140,10 +198,15 @@ function App() {
             idx === i ? { ...img, status: 'traitement' } : img
           ));
 
-          const result = await processImage(files[i]);
+          // Utiliser le service d'authentification pour le traitement
+          const result = await authService.processImage(files[i]);
+          
+          if (!result.success) {
+            throw new Error(result.error);
+          }
           
           // Normaliser la structure des bulles
-          const normalizedBubbles = (result.bubbles || []).map(bubble => ({
+          const normalizedBubbles = (result.result.bubbles || []).map(bubble => ({
             ...bubble,
             translatedText: bubble.translated_text || bubble.translatedText || '',
             ocrText: bubble.ocr_text || bubble.ocrText || '',
@@ -155,24 +218,24 @@ function App() {
             idx === i ? {
               ...img,
               status: 'terminée',
-              result: { url: `data:image/png;base64,${result.image_base64}`, blob: null },
+              result: { url: `data:image/png;base64,${result.result.image_base64}`, blob: null },
               bubbles: normalizedBubbles,
-              previewUrl: `data:image/png;base64,${result.image_base64}`,
-              cleanedUrl: `data:image/png;base64,${result.cleaned_base64}`,
+              previewUrl: `data:image/png;base64,${result.result.image_base64}`,
+              cleanedUrl: `data:image/png;base64,${result.result.cleaned_base64}`,
               cleanedBlob: null,
-              width: result.width || 0,
-              height: result.height || 0
+              width: result.result.width || 0,
+              height: result.result.height || 0
             } : img
           ));
 
           // Créer les blobs pour le téléchargement
-          const finalBytes = atob(result.image_base64);
+          const finalBytes = atob(result.result.image_base64);
           const finalArray = new Uint8Array(finalBytes.length);
           for (let j = 0; j < finalBytes.length; j++) {
             finalArray[j] = finalBytes.charCodeAt(j);
           }
           
-          const cleanedBytes = atob(result.cleaned_base64);
+          const cleanedBytes = atob(result.result.cleaned_base64);
           const cleanedArray = new Uint8Array(cleanedBytes.length);
           for (let j = 0; j < cleanedBytes.length; j++) {
             cleanedArray[j] = cleanedBytes.charCodeAt(j);
@@ -272,7 +335,39 @@ function App() {
         </div>
         <div className="header-container">
           {/* Titre supprimé car déjà dans le logo */}
-          <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} />
+          <div className="header-right">
+            {user && authService.isAuthenticated() && <QuotaDisplay />}
+            <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} />
+            {user ? (
+              <div className="user-section">
+                <span className="user-info">
+                  Bonjour, {user.username}!
+                </span>
+                <button 
+                  className="btn-logout" 
+                  onClick={handleLogout}
+                  title="Se déconnecter"
+                >
+                  🚪
+                </button>
+              </div>
+            ) : (
+              <div className="auth-buttons">
+                <button 
+                  className="btn-auth btn-login" 
+                  onClick={() => setShowLoginModal(true)}
+                >
+                  Se connecter
+                </button>
+                <button 
+                  className="btn-auth btn-register" 
+                  onClick={() => setShowRegisterModal(true)}
+                >
+                  S'inscrire
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <p className="subtitle">Uploadez vos pages, nettoyez et traduisez les bulles en un clic.</p>
 
@@ -785,6 +880,21 @@ function App() {
         images={images}
         onClose={closeBubbleEditor}
         onSave={handleSaveImages}
+      />
+
+      {/* Modales d'authentification */}
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+        onSwitchToRegister={switchToRegister}
+      />
+      
+      <RegisterModal 
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onRegisterSuccess={handleRegisterSuccess}
+        onSwitchToLogin={switchToLogin}
       />
     </div>
   );

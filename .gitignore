@@ -1,6 +1,7 @@
 #VERSION WEB
 # Python
 web/backend/venv/
+web/backend/venv310/
 __pycache__/
 *.pyc
 *.pyo
@@ -9,9 +10,17 @@ __pycache__/
 # FastAPI/Backend
 web/backend/output/
 web/backend/models/
+web/backend/models_ai/
 web/backend/data/
 web/backend/fonts/
 web/backend/.env
+
+# Modèles IA (gros fichiers)
+*.pth
+*.pt
+*.onnx
+*.h5
+*.pb
 
 # React/Frontend
 web/frontend/node_modules/
@@ -107,11 +116,29 @@ Thumbs.db
 /manga_screenshots/
 /output/
 /models/
+/models_ai/
+
+# Fichiers de test temporaires
+test_*.py
+*_test.py
+cleanup_db.py
+main_test.py
 
 # Logs
 *.log
 logs/
 
+# Base de données
+*.db
+*.sqlite
+*.sqlite3
+database.db
+bubble_hack.db
+postgresql_data/
+
 # Fichiers temporaires
 *.tmp
 *.temp
+
+#fichier cursor
+.cursorignore

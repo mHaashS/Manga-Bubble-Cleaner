@@ -1,72 +1,34 @@
 // Service API pour toutes les communications avec le backend
-const API_BASE_URL = 'http://localhost:8000';
+import authService from './authService';
 
 // Traitement principal d'une image
 export const processImage = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  
-  const response = await fetch(`${API_BASE_URL}/process`, {
-    method: "POST",
-    body: formData,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP: ${response.status}`);
-  }
-  
-  return await response.json();
+  return await authService.processImage(file);
 };
 
 // Récupération des polygones de bulles
 export const getBubblePolygons = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  
-  const response = await fetch(`${API_BASE_URL}/get-bubble-polygons`, {
-    method: "POST",
-    body: formData,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP: ${response.status}`);
+  const result = await authService.getBubblePolygons(file);
+  if (!result.success) {
+    throw new Error(result.error);
   }
-  
-  return await response.json();
+  return result.result;
 };
 
 // Retraitement avec polygones personnalisés
 export const retreatWithPolygons = async (file, polygons) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("polygons", JSON.stringify(polygons));
-  
-  const response = await fetch(`${API_BASE_URL}/retreat-with-polygons`, {
-    method: "POST",
-    body: formData,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP: ${response.status}`);
+  const result = await authService.retreatWithPolygons(file, polygons);
+  if (!result.success) {
+    throw new Error(result.error);
   }
-  
-  return await response.json();
+  return result.result;
 };
 
 // Réinsertion du texte traduit
 export const reinsertText = async (file, bubbles) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("bubbles", JSON.stringify(bubbles));
-  
-  const response = await fetch(`${API_BASE_URL}/reinsert`, {
-    method: "POST",
-    body: formData,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP: ${response.status}`);
+  const result = await authService.reinsertText(file, bubbles);
+  if (!result.success) {
+    throw new Error(result.error);
   }
-  
-  return await response.json();
+  return result.result;
 }; 

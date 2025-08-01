@@ -16,7 +16,7 @@ PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"))
-cfg.MODEL.WEIGHTS = os.path.join(PROJECT_DIR, "models", "model_final.pth")
+cfg.MODEL.WEIGHTS = os.path.join(PROJECT_DIR, "models_ai", "model_final.pth")
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
 cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3  # bubble, floating_text, narration_box
 cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
