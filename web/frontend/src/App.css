@@ -59,6 +59,44 @@ body.dark-mode, html.dark-mode {
   border: 1.5px solid #0030FF;
 }
 
+.top-buttons-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 100%;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.top-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.logo-quota-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.quota-container {
+  display: flex;
+  justify-content: flex-end;
+  width: auto;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Ancien header-container pour compatibilité */
 .header-container {
   display: flex;
   align-items: flex-start;
@@ -71,12 +109,15 @@ body.dark-mode, html.dark-mode {
   display: flex;
   align-items: center;
   gap: 15px;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .user-section {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: auto;
 }
 
 .user-info {
@@ -108,6 +149,8 @@ body.dark-mode, html.dark-mode {
 .auth-buttons {
   display: flex;
   gap: 10px;
+  align-items: center;
+  margin-left: auto;
 }
 
 .btn-auth {
@@ -729,6 +772,17 @@ body.dark-mode, html.dark-mode {
 @media (max-width: 700px) {
   .main-card { padding: 18px 4px; }
   .modal-content { padding: 12px 2px 12px 2px; }
+  
+  .logo-quota-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .quota-container {
+    position: static;
+    transform: none;
+    justify-content: center;
+  }
 } 
 
 .btn-primary.btn-outline-sm {
@@ -741,8 +795,7 @@ body.dark-mode, html.dark-mode {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 18px;
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .main-title {

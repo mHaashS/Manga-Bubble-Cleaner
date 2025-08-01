@@ -330,14 +330,9 @@ function App() {
   return (
     <div className={`app-bg ${darkMode ? 'dark-mode' : ''}`}>
       <div className={`main-card ${darkMode ? 'dark-mode' : ''}`}>
-        <div className="logo-container">
-          <img src="/logo-bubble-hack.png" alt="Logo Bubble Hack" className="logo-bubble-hack" />
-        </div>
-        <div className="header-container">
-          {/* Titre supprimé car déjà dans le logo */}
-          <div className="header-right">
-            {user && authService.isAuthenticated() && <QuotaDisplay />}
-            <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} />
+        {/* Boutons en haut à droite */}
+        <div className="top-buttons-container">
+          <div className="top-buttons">
             {user ? (
               <div className="user-section">
                 <span className="user-info">
@@ -367,7 +362,21 @@ function App() {
                 </button>
               </div>
             )}
+            <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} />
           </div>
+        </div>
+        
+        {/* Logo et quotas sur la même ligne */}
+        <div className="logo-quota-container">
+          <div className="logo-container">
+            <img src="/logo-bubble-hack.png" alt="Logo Bubble Hack" className="logo-bubble-hack" />
+          </div>
+          {/* Affichage des quotas à côté du logo quand connecté */}
+          {user && authService.isAuthenticated() && (
+            <div className="quota-container">
+              <QuotaDisplay />
+            </div>
+          )}
         </div>
         <p className="subtitle">Uploadez vos pages, nettoyez et traduisez les bulles en un clic.</p>
 
