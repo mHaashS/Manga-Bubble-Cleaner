@@ -162,6 +162,60 @@
     border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
+/* Mode light - Amélioration du contraste */
+.quota-display:not(.dark-mode) {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.quota-display:not(.dark-mode) .quota-header h3 {
+    color: #1f2937;
+    text-shadow: none;
+}
+
+.quota-display:not(.dark-mode) .quota-title {
+    color: #374151;
+}
+
+.quota-display:not(.dark-mode) .quota-numbers .used {
+    color: #059669;
+}
+
+.quota-display:not(.dark-mode) .quota-numbers .separator {
+    color: #6b7280;
+}
+
+.quota-display:not(.dark-mode) .quota-numbers .limit {
+    color: #1f2937;
+}
+
+.quota-display:not(.dark-mode) .quota-percentage {
+    color: #6b7280;
+}
+
+.quota-display:not(.dark-mode) .quota-card {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.quota-display:not(.dark-mode) .quota-card:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.quota-display:not(.dark-mode) .progress-bar {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.quota-display:not(.dark-mode) .refresh-button {
+    background: rgba(0, 0, 0, 0.1);
+    color: #374151;
+}
+
+.quota-display:not(.dark-mode) .refresh-button:hover {
+    background: rgba(0, 0, 0, 0.15);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .quota-cards {

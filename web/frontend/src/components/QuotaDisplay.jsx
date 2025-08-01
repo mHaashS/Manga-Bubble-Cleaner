@@ -6,6 +6,22 @@ const QuotaDisplay = () => {
     const [quotas, setQuotas] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    useEffect(() => {
+        // Détecter le mode sombre
+        const checkDarkMode = () => {
+            setIsDarkMode(document.body.classList.contains('dark-mode'));
+        };
+        
+        checkDarkMode();
+        
+        // Observer les changements de classe sur le body
+        const observer = new MutationObserver(checkDarkMode);
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         loadQuotas();
@@ -30,7 +46,7 @@ const QuotaDisplay = () => {
 
     if (loading) {
         return (
-            <div className="quota-display">
+            <div className={`quota-display ${isDarkMode ? 'dark-mode' : ''}`}>
                 <div className="quota-loading">Chargement des quotas...</div>
             </div>
         );
@@ -38,7 +54,7 @@ const QuotaDisplay = () => {
 
     if (error) {
         return (
-            <div className="quota-display">
+            <div className={`quota-display ${isDarkMode ? 'dark-mode' : ''}`}>
                 <div className="quota-error">{error}</div>
             </div>
         );
@@ -52,7 +68,7 @@ const QuotaDisplay = () => {
     const monthlyPercentage = (quotas.monthly_used / quotas.monthly_limit) * 100;
 
     return (
-        <div className="quota-display">
+        <div className={`quota-display ${isDarkMode ? 'dark-mode' : ''}`}>
             <div className="quota-header">
                 <h3>Vos quotas</h3>
                 <button className="refresh-button" onClick={loadQuotas}>
