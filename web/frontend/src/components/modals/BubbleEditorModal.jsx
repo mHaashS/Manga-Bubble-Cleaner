@@ -3,7 +3,7 @@ import authService from '../../services/authService';
 import { isPointInPolygon } from '../../utils/canvasUtils';
 import { base64ToBlob } from '../../utils/fileUtils';
 
-const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
+const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave, darkMode = false }) => {
   // === ÉTATS ===
   const [bubblePolygons, setBubblePolygons] = useState([]);
   const [selectedPolygon, setSelectedPolygon] = useState(null);
@@ -641,22 +641,12 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
               </div>
             )}
           </div>
-          
-          <div style={{
-            marginTop: 16,
-            color: '#7c3aed',
-            fontSize: 14,
-            textAlign: 'center',
-            maxWidth: 600
-          }}>
-            💡 Cliquez sur une bulle pour la sélectionner • Glissez-déposez les bulles entières • Glissez-déposez les points pour les redimensionner • Utilisez les boutons à droite pour modifier
-          </div>
-                     <div style={{
-             marginTop: 8,
-             color: '#6b7280',
-             fontSize: 12,
-             textAlign: 'center',
-             maxWidth: 600
+            <div style={{
+              marginTop: 8,
+              color: darkMode ? '#9ca3af' : '#DFE4F7',
+              fontSize: 12,
+              textAlign: 'center',
+              maxWidth: 600
            }}>
              ⌨️ Raccourcis : <strong>Suppr</strong> pour supprimer • <strong>Ins</strong> pour ajouter • <strong>Ctrl+Z</strong> pour annuler • <strong>Ctrl+Y</strong> pour refaire
            </div>

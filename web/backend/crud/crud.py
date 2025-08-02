@@ -319,7 +319,7 @@ def check_user_quotas(db: Session, user_id: int):
 # Opérations sessions
 def create_user_session(db: Session, user_id: int, ip_address: str = None, user_agent: str = None):
     session_token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(days=7)  # Session de 7 jours
+    expires_at = datetime.utcnow() + timedelta(days=30)  # Session de 30 jours
     
     session = models.UserSession(
         user_id=user_id,

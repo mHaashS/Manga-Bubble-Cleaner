@@ -910,6 +910,7 @@ function App() {
         images={images}
         onClose={closeBubbleEditor}
         onSave={handleSaveImages}
+        darkMode={darkMode}
       />
 
       {/* Modales d'authentification */}
