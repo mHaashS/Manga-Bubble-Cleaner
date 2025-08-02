@@ -4,6 +4,7 @@ from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException, sta
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 import time
 
 from processing.pipeline import process_image_pipeline_with_bubbles
@@ -255,4 +256,132 @@ async def reinsert_text(
 @app.get("/health")
 async def health_check():
     """Vérification de la santé de l'API"""
-    return {"status": "healthy", "message": "Bubble Cleaner API is running"} 
+    return {"status": "healthy", "message": "Bubble Cleaner API is running"}
+
+# ==================== ROUTES DE GESTION DES UTILISATEURS ====================
+
+@app.post("/forgot-password")
+async def forgot_password(request: schemas.ForgotPassword, db: Session = Depends(get_db)):
+    """Demande de récupération de mot de passe"""
+    user = crud.get_user_by_email(db, email=request.email)
+    if not user:
+        # Pour des raisons de sécurité, on ne révèle pas si l'email existe
+        return {"message": "Si cet email existe, un lien de récupération a été envoyé"}
+    
+    # Générer un token de récupération
+    import secrets
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)  # Expire dans 24h
+    
+    # Créer le token en base
+    crud.create_password_reset_token(db, user.id, token, expires_at)
+    
+    # TODO: Envoyer l'email avec le lien de récupération
+    # Pour l'instant, on retourne le token (en prod, il faudrait envoyer un email)
+    reset_url = f"http://localhost:3000/reset-password?token={token}"
+    
+    return {
+        "message": "Lien de récupération envoyé",
+        "reset_url": reset_url  # À supprimer en production
+    }
+
+@app.post("/reset-password")
+async def reset_password(request: schemas.ResetPassword, db: Session = Depends(get_db)):
+    """Réinitialisation du mot de passe avec un token"""
+    # Vérifier le token
+    reset_token = crud.get_password_reset_token(db, request.token)
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    
+    # Hasher le nouveau mot de passe
+    new_hashed_password = get_password_hash(request.new_password)
+    
+    # Mettre à jour le mot de passe
+    user = crud.update_user_password(db, reset_token.user_id, new_hashed_password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour")
+    
+    # Marquer le token comme utilisé
+    crud.mark_password_reset_token_used(db, request.token)
+    
+    # Désactiver toutes les sessions de l'utilisateur
+    crud.deactivate_all_user_sessions(db, user.id)
+    
+    return {"message": "Mot de passe mis à jour avec succès"}
+
+@app.post("/change-password")
+async def change_password(
+    request: schemas.PasswordChange,
+    current_user: schemas.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Changement de mot de passe (utilisateur connecté)"""
+    # Vérifier l'ancien mot de passe
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+    
+    # Hasher le nouveau mot de passe
+    new_hashed_password = get_password_hash(request.new_password)
+    
+    # Mettre à jour le mot de passe
+    user = crud.update_user_password(db, current_user.id, new_hashed_password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour")
+    
+    # Désactiver toutes les sessions de l'utilisateur
+    crud.deactivate_all_user_sessions(db, current_user.id)
+    
+    return {"message": "Mot de passe mis à jour avec succès"}
+
+@app.post("/change-username")
+async def change_username(
+    request: schemas.UsernameChange,
+    current_user: schemas.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Changement de nom d'utilisateur"""
+    # Vérifier le mot de passe
+    if not verify_password(request.password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Mot de passe incorrect")
+    
+    # Vérifier si le nouveau username existe déjà
+    existing_user = crud.get_user_by_username(db, request.new_username)
+    if existing_user and existing_user.id != current_user.id:
+        raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris")
+    
+    # Mettre à jour le username
+    user = crud.update_user_username(db, current_user.id, request.new_username)
+    if not user:
+        raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour")
+    
+    return {"message": "Nom d'utilisateur mis à jour avec succès", "new_username": request.new_username}
+
+@app.post("/change-email")
+async def change_email(
+    request: schemas.EmailChange,
+    current_user: schemas.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Changement d'email"""
+    # Vérifier le mot de passe
+    if not verify_password(request.password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Mot de passe incorrect")
+    
+    # Vérifier si le nouveau email existe déjà
+    existing_user = crud.get_user_by_email(db, request.new_email)
+    if existing_user and existing_user.id != current_user.id:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+    
+    # Mettre à jour l'email
+    user = crud.update_user_email(db, current_user.id, request.new_email)
+    if not user:
+        raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour")
+    
+    return {"message": "Email mis à jour avec succès", "new_email": request.new_email}
+
+@app.delete("/logout")
+async def logout(current_user: schemas.User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    """Déconnexion de l'utilisateur"""
+    # Désactiver toutes les sessions de l'utilisateur
+    crud.deactivate_all_user_sessions(db, current_user.id)
+    return {"message": "Déconnexion réussie"} 

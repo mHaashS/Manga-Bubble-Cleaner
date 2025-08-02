@@ -10,6 +10,7 @@ import BubbleEditorModal from './components/modals/BubbleEditorModal';
 import LoginModal from './components/LoginModal';
 import RegisterModal from './components/RegisterModal';
 import QuotaDisplay from './components/QuotaDisplay';
+import ProfileModal from './components/ProfileModal';
 import authService from './services/authService';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   // === ÉTATS DES MODALES ===
   const [modalOpen, setModalOpen] = useState(false);
@@ -338,6 +340,13 @@ function App() {
                 <span className="user-info">
                   Bonjour, {user.username}!
                 </span>
+                <button 
+                  className="btn-profile" 
+                  onClick={() => setShowProfileModal(true)}
+                  title="Gérer le profil"
+                >
+                  👤
+                </button>
                 <button 
                   className="btn-logout" 
                   onClick={handleLogout}
@@ -904,6 +913,13 @@ function App() {
         onClose={() => setShowRegisterModal(false)}
         onRegisterSuccess={handleRegisterSuccess}
         onSwitchToLogin={switchToLogin}
+      />
+
+      {/* Modal de gestion du profil */}
+      <ProfileModal 
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        user={user}
       />
     </div>
   );

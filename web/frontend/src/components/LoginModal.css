@@ -219,4 +219,37 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Styles pour la fonctionnalité "Mot de passe oublié" */
+.forgot-password-text {
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.success-message {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Animation de transition pour le changement de vue */
+.auth-form {
+    transition: all 0.3s ease;
+}
+
+.modal-footer p {
+    margin-bottom: 10px;
+}
+
+.modal-footer p:last-child {
+    margin-bottom: 0;
 } 

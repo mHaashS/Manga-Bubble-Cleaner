@@ -304,6 +304,154 @@ class AuthService {
             return { success: false, error: error.message };
         }
     }
+
+    // Nouvelles méthodes pour la gestion des utilisateurs
+    async changePassword(currentPassword, newPassword) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/change-password`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Erreur lors du changement de mot de passe');
+            }
+
+            const result = await response.json();
+            return { success: true, message: result.message };
+        } catch (error) {
+            console.log("❌ Erreur lors du changement de mot de passe:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async changeUsername(newUsername, password) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/change-username`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    new_username: newUsername,
+                    password: password
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Erreur lors du changement de nom d\'utilisateur');
+            }
+
+            const result = await response.json();
+            return { success: true, message: result.message, new_username: result.new_username };
+        } catch (error) {
+            console.log("❌ Erreur lors du changement de nom d'utilisateur:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async changeEmail(newEmail, password) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/change-email`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    new_email: newEmail,
+                    password: password
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Erreur lors du changement d\'email');
+            }
+
+            const result = await response.json();
+            return { success: true, message: result.message, new_email: result.new_email };
+        } catch (error) {
+            console.log("❌ Erreur lors du changement d'email:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async forgotPassword(email) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Erreur lors de l\'envoi de l\'email de récupération');
+            }
+
+            const result = await response.json();
+            return { success: true, message: result.message, reset_url: result.reset_url };
+        } catch (error) {
+            console.log("❌ Erreur lors de l'envoi de l'email de récupération:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async resetPassword(token, newPassword) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    new_password: newPassword
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Erreur lors de la réinitialisation du mot de passe');
+            }
+
+            const result = await response.json();
+            return { success: true, message: result.message };
+        } catch (error) {
+            console.log("❌ Erreur lors de la réinitialisation du mot de passe:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async logout() {
+        try {
+            // Appeler l'API de déconnexion
+            if (this.token) {
+                await fetch(`${API_BASE_URL}/logout`, {
+                    method: 'DELETE',
+                    headers: this.getAuthHeaders(),
+                });
+            }
+        } catch (error) {
+            console.log("⚠️ Erreur lors de la déconnexion côté serveur:", error);
+        } finally {
+            // Nettoyer le stockage local
+            this.token = null;
+            this.user = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+        }
+    }
+
+    // Mettre à jour les informations utilisateur
+    updateUser(userData) {
+        this.user = { ...this.user, ...userData };
+        localStorage.setItem('user', JSON.stringify(this.user));
+    }
 }
 
 // Instance singleton

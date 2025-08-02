@@ -91,4 +91,39 @@ class QuotaStatus(BaseModel):
     monthly_used: int
     monthly_limit: int
     can_process: bool
-    message: Optional[str] = None 
+    message: Optional[str] = None
+
+# Schémas pour la gestion des utilisateurs
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+class UsernameChange(BaseModel):
+    new_username: str
+    password: str  # Pour confirmer l'identité
+
+class EmailChange(BaseModel):
+    new_email: EmailStr
+    password: str  # Pour confirmer l'identité
+
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+class ResetPassword(BaseModel):
+    token: str
+    new_password: str
+
+class PasswordResetToken(BaseModel):
+    id: int
+    user_id: int
+    token: str
+    is_used: bool
+    expires_at: datetime
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None 

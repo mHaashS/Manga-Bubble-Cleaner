@@ -373,4 +373,91 @@ def cleanup_expired_sessions(db: Session):
         session.is_active = False
     
     db.commit()
-    return len(expired_sessions) 
+    return len(expired_sessions)
+
+# Nouvelles fonctions pour la gestion des utilisateurs
+def update_user_password(db: Session, user_id: int, new_hashed_password: str):
+    """Met à jour le mot de passe d'un utilisateur"""
+    user = get_user_by_id(db, user_id)
+    if user:
+        user.hashed_password = new_hashed_password
+        user.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(user)
+    return user
+
+def update_user_username(db: Session, user_id: int, new_username: str):
+    """Met à jour le nom d'utilisateur"""
+    user = get_user_by_id(db, user_id)
+    if user:
+        user.username = new_username
+        user.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(user)
+    return user
+
+def update_user_email(db: Session, user_id: int, new_email: str):
+    """Met à jour l'email d'un utilisateur"""
+    user = get_user_by_id(db, user_id)
+    if user:
+        user.email = new_email
+        user.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(user)
+    return user
+
+def create_password_reset_token(db: Session, user_id: int, token: str, expires_at: datetime):
+    """Crée un token de récupération de mot de passe"""
+    # Désactiver les anciens tokens non utilisés
+    old_tokens = db.query(models.PasswordReset).filter(
+        and_(
+            models.PasswordReset.user_id == user_id,
+            models.PasswordReset.is_used == False
+        )
+    ).all()
+    
+    for old_token in old_tokens:
+        old_token.is_used = True
+    
+    # Créer le nouveau token
+    reset_token = models.PasswordReset(
+        user_id=user_id,
+        token=token,
+        expires_at=expires_at
+    )
+    db.add(reset_token)
+    db.commit()
+    db.refresh(reset_token)
+    return reset_token
+
+def get_password_reset_token(db: Session, token: str):
+    """Récupère un token de récupération de mot de passe"""
+    return db.query(models.PasswordReset).filter(
+        and_(
+            models.PasswordReset.token == token,
+            models.PasswordReset.is_used == False,
+            models.PasswordReset.expires_at > datetime.utcnow()
+        )
+    ).first()
+
+def mark_password_reset_token_used(db: Session, token: str):
+    """Marque un token de récupération comme utilisé"""
+    reset_token = get_password_reset_token(db, token)
+    if reset_token:
+        reset_token.is_used = True
+        db.commit()
+        db.refresh(reset_token)
+    return reset_token
+
+def cleanup_expired_password_resets(db: Session):
+    """Nettoie les tokens de récupération expirés"""
+    now = datetime.utcnow()
+    expired_tokens = db.query(models.PasswordReset).filter(
+        models.PasswordReset.expires_at < now
+    ).all()
+    
+    for token in expired_tokens:
+        token.is_used = True
+    
+    db.commit()
+    return len(expired_tokens) 
