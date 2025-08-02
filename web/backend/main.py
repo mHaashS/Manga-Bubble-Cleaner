@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import time
+import os
 
 from processing.pipeline import process_image_pipeline_with_bubbles
 from processing.reinsert_translations import draw_translated_text
@@ -17,6 +18,9 @@ from models import models
 from schemas import schemas
 from crud import crud
 from auth.auth import get_current_active_user, create_access_token, get_password_hash, verify_password
+
+# Import du service d'email
+from services.email_service import send_password_reset_email, send_welcome_email
 
 import base64
 import numpy as np
@@ -55,6 +59,13 @@ async def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Créer l'utilisateur
     hashed_password = get_password_hash(user.password)
     db_user = crud.create_user(db, user.email, user.username, hashed_password)
+    
+    # Envoyer un email de bienvenue (en arrière-plan, sans bloquer la réponse)
+    try:
+        await send_welcome_email(email=db_user.email, username=db_user.username)
+    except Exception as e:
+        print(f"Erreur lors de l'envoi de l'email de bienvenue: {e}")
+        # On ne fait pas échouer l'inscription si l'email échoue
     
     return db_user
 
@@ -276,14 +287,29 @@ async def forgot_password(request: schemas.ForgotPassword, db: Session = Depends
     # Créer le token en base
     crud.create_password_reset_token(db, user.id, token, expires_at)
     
-    # TODO: Envoyer l'email avec le lien de récupération
-    # Pour l'instant, on retourne le token (en prod, il faudrait envoyer un email)
-    reset_url = f"http://localhost:3000/reset-password?token={token}"
+    # Construire l'URL de récupération
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    reset_url = f"{frontend_url}/reset-password?token={token}"
     
-    return {
-        "message": "Lien de récupération envoyé",
-        "reset_url": reset_url  # À supprimer en production
-    }
+    # Envoyer l'email de récupération
+    email_sent = await send_password_reset_email(
+        email=user.email,
+        username=user.username,
+        reset_token=token,
+        reset_url=reset_url
+    )
+    
+    if email_sent:
+        return {"message": "Email de récupération envoyé. Vérifiez votre boîte mail."}
+    else:
+        # En cas d'échec d'envoi, on peut retourner le lien directement (pour le développement)
+        if os.getenv("ENVIRONMENT") == "development":
+            return {
+                "message": "Erreur lors de l'envoi de l'email. Lien de récupération (développement uniquement):",
+                "reset_url": reset_url
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email")
 
 @app.post("/reset-password")
 async def reset_password(request: schemas.ResetPassword, db: Session = Depends(get_db)):
