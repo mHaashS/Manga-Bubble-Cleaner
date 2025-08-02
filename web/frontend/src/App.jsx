@@ -11,6 +11,7 @@ import LoginModal from './components/LoginModal';
 import RegisterModal from './components/RegisterModal';
 import QuotaDisplay from './components/QuotaDisplay';
 import ProfileModal from './components/ProfileModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 import authService from './services/authService';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   
   // === ÉTATS DES MODALES ===
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,6 +60,16 @@ function App() {
     } else {
       console.log("❌ Utilisateur non connecté");
       setUser(null);
+    }
+
+    // Vérifier s'il y a un token de récupération dans l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('token');
+    if (resetToken) {
+      console.log("🔑 Token de récupération détecté dans l'URL");
+      setShowResetPasswordModal(true);
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -920,6 +932,16 @@ function App() {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         user={user}
+      />
+
+      {/* Modal de récupération de mot de passe */}
+      <ResetPasswordModal 
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        onSuccess={() => {
+          setShowResetPasswordModal(false);
+          setShowLoginModal(true);
+        }}
       />
     </div>
   );

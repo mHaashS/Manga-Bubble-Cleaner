@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import authService from '../services/authService';
 import './ProfileModal.css';
 
@@ -7,6 +7,21 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Détecter le mode sombre
+    useEffect(() => {
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        setIsDarkMode(darkMode);
+        
+        const handleStorageChange = () => {
+            const newDarkMode = localStorage.getItem('darkMode') === 'true';
+            setIsDarkMode(newDarkMode);
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
 
     // États pour les formulaires
     const [passwordData, setPasswordData] = useState({
@@ -186,7 +201,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
 
     return (
         <div className="profile-modal-overlay">
-            <div className="profile-modal">
+            <div className={`profile-modal ${isDarkMode ? 'dark-mode' : ''}`}>
                 <div className="profile-modal-header">
                     <h2>Gestion du Profil</h2>
                     <button className="close-button" onClick={onClose}>×</button>

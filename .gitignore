@@ -1,19 +1,33 @@
-#VERSION WEB
-# Python
+# ========================================
+# BUBBLE CLEANER - GITIGNORE
+# ========================================
+
+# ========================================
+# VERSION WEB
+# ========================================
+
+# Python - Environnements virtuels
 web/backend/venv/
 web/backend/venv310/
+web/backend/venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# FastAPI/Backend
+# FastAPI/Backend - Structure organisée
 web/backend/output/
 web/backend/models/
 web/backend/models_ai/
 web/backend/data/
 web/backend/fonts/
 web/backend/.env
+
+# Nouveaux dossiers organisés
+web/backend/logs/
+web/backend/tests/__pycache__/
+web/backend/services/__pycache__/
+web/backend/utils/__pycache__/
 
 # Modèles IA (gros fichiers)
 *.pth
@@ -37,11 +51,14 @@ Thumbs.db
 .DS_Store
 Icon?
 
-# Autres
+# Variables d'environnement
 .env
 .env.* 
 
-#VERSION DESKTOP
+# ========================================
+# VERSION DESKTOP
+# ========================================
+
 # Byte-compiled / caches
 __pycache__/
 *.py[cod]
@@ -111,6 +128,10 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
+# ========================================
+# DONNÉES ET FICHIERS LOURDS
+# ========================================
+
 # Données lourdes
 /data/
 /manga_screenshots/
@@ -118,11 +139,18 @@ Thumbs.db
 /models/
 /models_ai/
 
-# Fichiers de test temporaires
+# Fichiers de test temporaires (maintenant dans tests/)
+# Note: Les tests sont maintenant organisés dans web/backend/tests/
+# Mais on garde ces patterns pour les fichiers de test temporaires
+tests/
 test_*.py
 *_test.py
-cleanup_db.py
 main_test.py
+
+# Scripts de maintenance locaux
+cleanup_db.py
+maintenance_*.py
+debug_*.py
 
 # Logs
 *.log
@@ -140,5 +168,36 @@ postgresql_data/
 *.tmp
 *.temp
 
-#fichier cursor
+# ========================================
+# OUTILS DE DÉVELOPPEMENT
+# ========================================
+
+# Cursor
 .cursorignore
+
+# ========================================
+# SÉCURITÉ
+# ========================================
+
+# Fichiers sensibles
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+config.json
+
+# ========================================
+# BACKUP ET FICHIERS TEMPORAIRES
+# ========================================
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*~
+*.orig
+
+# Fichiers temporaires de développement
+temp/
+tmp/
+temp_*/

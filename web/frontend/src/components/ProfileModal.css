@@ -210,7 +210,7 @@
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    color: #374151;
+    color: #374151 !important;
     font-weight: 500;
     font-size: 14px;
 }
@@ -324,8 +324,51 @@
     color: #f9fafb;
 }
 
+/* Styles pour les labels en mode sombre dans le modal */
+.dark-mode .profile-modal .form-section .form-group label {
+    color: white !important;
+}
+
+/* Styles pour les labels en mode clair dans le modal */
+.profile-modal .form-section .form-group label {
+    color: #374151 !important;
+}
+
+/* Styles consolidés pour les labels - mode clair par défaut */
+.form-group label {
+    color: #374151 !important;
+}
+
+/* Styles pour les labels en mode sombre */
 .dark-mode .form-group label {
-    color: #d1d5db;
+    color: white !important;
+}
+
+/* Styles spécifiques pour le modal de profil */
+.profile-modal .form-group label {
+    color: #374151 !important;
+}
+
+.profile-modal.dark-mode .form-group label {
+    color: white !important;
+}
+
+/* Styles spécifiques pour les labels dans les formulaires */
+.form-section .form-group label {
+    color: #374151 !important;
+}
+
+.dark-mode .form-section .form-group label {
+    color: white !important;
+}
+
+/* Styles de secours pour tous les labels */
+label {
+    color: #374151 !important;
+}
+
+.dark-mode label {
+    color: white !important;
 }
 
 .dark-mode .form-group input {

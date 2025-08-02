@@ -17,7 +17,50 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   const [isRetreating, setIsRetreating] = useState(false);
   const [error, setError] = useState(null);
   
+  // === HISTORIQUE UNDO/REDO ===
+  const [history, setHistory] = useState([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
+  const [isUndoRedoAction, setIsUndoRedoAction] = useState(false);
+  
   const bubbleCanvasRef = useRef(null);
+
+  // === FONCTIONS D'HISTORIQUE ===
+  const addToHistory = (newPolygons) => {
+    if (isUndoRedoAction) return; // Éviter les boucles infinies
+    
+    const newHistory = history.slice(0, currentHistoryIndex + 1);
+    newHistory.push(JSON.stringify(newPolygons));
+    
+    // Limiter l'historique à 20 étapes pour éviter la surcharge mémoire
+    if (newHistory.length > 20) {
+      newHistory.shift();
+    }
+    
+    setHistory(newHistory);
+    setCurrentHistoryIndex(newHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (currentHistoryIndex > 0) {
+      setIsUndoRedoAction(true);
+      const previousState = JSON.parse(history[currentHistoryIndex - 1]);
+      setBubblePolygons(previousState);
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      setSelectedPolygon(null); // Désélectionner pour éviter les conflits
+      setTimeout(() => setIsUndoRedoAction(false), 100);
+    }
+  };
+
+  const redo = () => {
+    if (currentHistoryIndex < history.length - 1) {
+      setIsUndoRedoAction(true);
+      const nextState = JSON.parse(history[currentHistoryIndex + 1]);
+      setBubblePolygons(nextState);
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+      setSelectedPolygon(null); // Désélectionner pour éviter les conflits
+      setTimeout(() => setIsUndoRedoAction(false), 100);
+    }
+  };
 
   // === INITIALISATION ===
   useEffect(() => {
@@ -60,7 +103,12 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
       if (!result.success) {
         throw new Error(result.error);
       }
-      setBubblePolygons(result.result.polygons || []);
+      const polygons = result.result.polygons || [];
+      setBubblePolygons(polygons);
+      
+      // Initialiser l'historique avec l'état initial
+      setHistory([JSON.stringify(polygons)]);
+      setCurrentHistoryIndex(0);
       
       // Redessiner avec les polygones une fois qu'ils sont chargés
       setTimeout(() => {
@@ -264,6 +312,11 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   };
 
   const handleBubbleEditorMouseUp = () => {
+    if (isDragging) {
+      // Ajouter à l'historique seulement si on a vraiment déplacé quelque chose
+      addToHistory(bubblePolygons);
+    }
+    
     setIsDragging(false);
     setDragType(null);
     setDragPolygonIndex(null);
@@ -274,6 +327,7 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
     if (selectedPolygon !== null) {
       const newPolygons = bubblePolygons.filter((_, index) => index !== selectedPolygon);
       setBubblePolygons(newPolygons);
+      addToHistory(newPolygons);
       setSelectedPolygon(null);
       drawBubbleEditor();
     }
@@ -312,6 +366,7 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
     // Ajouter la nouvelle bulle à la liste
     const newPolygons = [...bubblePolygons, newBubble];
     setBubblePolygons(newPolygons);
+    addToHistory(newPolygons);
     
     // Sélectionner automatiquement la nouvelle bulle
     setSelectedPolygon(newPolygons.length - 1);
@@ -367,6 +422,30 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
       setIsRetreating(false);
     }
   };
+
+  // === GESTION DES RACCOURCIS CLAVIER ===
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+      
+      if (e.key === 'Insert') {
+        e.preventDefault();
+        addNewBubble();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelectedBubble();
+      } else if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      } else if (e.ctrlKey && e.key === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, selectedPolygon, bubblePolygons, currentHistoryIndex, history]);
 
   // === EFFET POUR REDESSINER ===
   useEffect(() => {
@@ -572,15 +651,15 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
           }}>
             💡 Cliquez sur une bulle pour la sélectionner • Glissez-déposez les bulles entières • Glissez-déposez les points pour les redimensionner • Utilisez les boutons à droite pour modifier
           </div>
-          <div style={{
-            marginTop: 8,
-            color: '#6b7280',
-            fontSize: 12,
-            textAlign: 'center',
-            maxWidth: 600
-          }}>
-            ⌨️ Raccourcis : <strong>Suppr</strong> pour supprimer • <strong>Ins</strong> pour ajouter
-          </div>
+                     <div style={{
+             marginTop: 8,
+             color: '#6b7280',
+             fontSize: 12,
+             textAlign: 'center',
+             maxWidth: 600
+           }}>
+             ⌨️ Raccourcis : <strong>Suppr</strong> pour supprimer • <strong>Ins</strong> pour ajouter • <strong>Ctrl+Z</strong> pour annuler • <strong>Ctrl+Y</strong> pour refaire
+           </div>
         </div>
         
         {/* Zone de contrôle à droite */}
@@ -607,71 +686,154 @@ const BubbleEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
             Actions
           </div>
           
-          <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-            <button 
-              style={{
-                padding: '12px 16px',
-                fontSize: 15,
-                fontWeight: 500,
-                backgroundColor: isRetreating ? '#6b7280' : '#10b981',
-                color: '#ffffff',
-                border: `1.5px solid ${isRetreating ? '#6b7280' : '#10b981'}`,
-                borderRadius: 8,
-                transition: 'all 0.3s ease',
-                cursor: isRetreating ? 'not-allowed' : 'pointer',
-                transform: 'translateY(0)',
-                boxShadow: isRetreating ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.2)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              onMouseEnter={(e) => {
-                if (!isRetreating) {
-                  e.target.style.backgroundColor = '#059669';
-                  e.target.style.borderColor = '#059669';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isRetreating) {
-                  e.target.style.backgroundColor = '#10b981';
-                  e.target.style.borderColor = '#10b981';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
-                }
-              }}
-              onClick={isRetreating ? undefined : retreatWithPolygonsAction}
-              disabled={isRetreating}
-            >
-              {isRetreating ? (
-                <>
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1
-                  }}>
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      border: '2px solid #ffffff',
-                      borderTop: '2px solid transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }}></div>
-                  </div>
-                  <span style={{ opacity: 0.7 }}>⏳ Retraitement en cours...</span>
-                </>
-              ) : (
-                '🔄 Retraiter avec les bulles modifiées'
-              )}
-            </button>
+                     <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+             {/* Boutons Undo/Redo */}
+             <div style={{
+               display: 'flex',
+               gap: 8,
+               marginBottom: 8
+             }}>
+               <button 
+                 style={{
+                   flex: 1,
+                   padding: '8px 12px',
+                   fontSize: 13,
+                   fontWeight: 500,
+                   backgroundColor: currentHistoryIndex > 0 ? '#8b5cf6' : '#6b7280',
+                   color: '#ffffff',
+                   border: `1.5px solid ${currentHistoryIndex > 0 ? '#8b5cf6' : '#6b7280'}`,
+                   borderRadius: 6,
+                   transition: 'all 0.2s ease',
+                   cursor: currentHistoryIndex > 0 ? 'pointer' : 'not-allowed',
+                   transform: 'translateY(0)',
+                   boxShadow: currentHistoryIndex > 0 ? '0 2px 6px rgba(139, 92, 246, 0.2)' : 'none'
+                 }}
+                 onMouseEnter={(e) => {
+                   if (currentHistoryIndex > 0) {
+                     e.target.style.backgroundColor = '#7c3aed';
+                     e.target.style.borderColor = '#7c3aed';
+                     e.target.style.transform = 'translateY(-1px)';
+                     e.target.style.boxShadow = '0 3px 12px rgba(139, 92, 246, 0.3)';
+                   }
+                 }}
+                 onMouseLeave={(e) => {
+                   if (currentHistoryIndex > 0) {
+                     e.target.style.backgroundColor = '#8b5cf6';
+                     e.target.style.borderColor = '#8b5cf6';
+                     e.target.style.transform = 'translateY(0)';
+                     e.target.style.boxShadow = '0 2px 6px rgba(139, 92, 246, 0.2)';
+                   }
+                 }}
+                 onClick={currentHistoryIndex > 0 ? undo : undefined}
+                 disabled={currentHistoryIndex <= 0}
+                 title="Annuler (Ctrl+Z)"
+               >
+                 ↩️ Annuler
+               </button>
+               
+               <button 
+                 style={{
+                   flex: 1,
+                   padding: '8px 12px',
+                   fontSize: 13,
+                   fontWeight: 500,
+                   backgroundColor: currentHistoryIndex < history.length - 1 ? '#8b5cf6' : '#6b7280',
+                   color: '#ffffff',
+                   border: `1.5px solid ${currentHistoryIndex < history.length - 1 ? '#8b5cf6' : '#6b7280'}`,
+                   borderRadius: 6,
+                   transition: 'all 0.2s ease',
+                   cursor: currentHistoryIndex < history.length - 1 ? 'pointer' : 'not-allowed',
+                   transform: 'translateY(0)',
+                   boxShadow: currentHistoryIndex < history.length - 1 ? '0 2px 6px rgba(139, 92, 246, 0.2)' : 'none'
+                 }}
+                 onMouseEnter={(e) => {
+                   if (currentHistoryIndex < history.length - 1) {
+                     e.target.style.backgroundColor = '#7c3aed';
+                     e.target.style.borderColor = '#7c3aed';
+                     e.target.style.transform = 'translateY(-1px)';
+                     e.target.style.boxShadow = '0 3px 12px rgba(139, 92, 246, 0.3)';
+                   }
+                 }}
+                 onMouseLeave={(e) => {
+                   if (currentHistoryIndex < history.length - 1) {
+                     e.target.style.backgroundColor = '#8b5cf6';
+                     e.target.style.borderColor = '#8b5cf6';
+                     e.target.style.transform = 'translateY(0)';
+                     e.target.style.boxShadow = '0 2px 6px rgba(139, 92, 246, 0.2)';
+                   }
+                 }}
+                 onClick={currentHistoryIndex < history.length - 1 ? redo : undefined}
+                 disabled={currentHistoryIndex >= history.length - 1}
+                 title="Refaire (Ctrl+Y)"
+               >
+                 ↪️ Refaire
+               </button>
+             </div>
+             
+             <button 
+               style={{
+                 padding: '12px 16px',
+                 fontSize: 15,
+                 fontWeight: 500,
+                 backgroundColor: isRetreating ? '#6b7280' : '#10b981',
+                 color: '#ffffff',
+                 border: `1.5px solid ${isRetreating ? '#6b7280' : '#10b981'}`,
+                 borderRadius: 8,
+                 transition: 'all 0.3s ease',
+                 cursor: isRetreating ? 'not-allowed' : 'pointer',
+                 transform: 'translateY(0)',
+                 boxShadow: isRetreating ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.2)',
+                 position: 'relative',
+                 overflow: 'hidden'
+               }}
+               onMouseEnter={(e) => {
+                 if (!isRetreating) {
+                   e.target.style.backgroundColor = '#059669';
+                   e.target.style.borderColor = '#059669';
+                   e.target.style.transform = 'translateY(-2px)';
+                   e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.4)';
+                 }
+               }}
+               onMouseLeave={(e) => {
+                 if (!isRetreating) {
+                   e.target.style.backgroundColor = '#10b981';
+                   e.target.style.borderColor = '#10b981';
+                   e.target.style.transform = 'translateY(0)';
+                   e.target.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                 }
+               }}
+               onClick={isRetreating ? undefined : retreatWithPolygonsAction}
+               disabled={isRetreating}
+             >
+               {isRetreating ? (
+                 <>
+                   <div style={{
+                     position: 'absolute',
+                     top: 0,
+                     left: 0,
+                     right: 0,
+                     bottom: 0,
+                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center',
+                     zIndex: 1
+                   }}>
+                     <div style={{
+                       width: '20px',
+                       height: '20px',
+                       border: '2px solid #ffffff',
+                       borderTop: '2px solid transparent',
+                       borderRadius: '50%',
+                       animation: 'spin 1s linear infinite'
+                     }}></div>
+                   </div>
+                   <span style={{ opacity: 0.7 }}>⏳ Retraitement en cours...</span>
+                 </>
+               ) : (
+                 '🔄 Retraiter avec les bulles modifiées'
+               )}
+             </button>
             
             <button 
               style={{
