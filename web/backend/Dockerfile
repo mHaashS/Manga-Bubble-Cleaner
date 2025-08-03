@@ -1,4 +1,4 @@
-# Dockerfile optimisé pour Railway
+# Dockerfile optimisé pour Railway - REBUILD FORCE $(date)
 FROM python:3.10-slim
 
 # Variables d'environnement pour optimiser le build
@@ -42,5 +42,5 @@ COPY . .
 # Exposition du port
 EXPOSE 8000
 
-# Script de démarrage corrigé
+# Commande de démarrage avec port fixe
 CMD uvicorn main:app --host 0.0.0.0 --port 8000

@@ -271,6 +271,7 @@ async def reinsert_text(
 @app.get("/health")
 async def health_check():
     """Vérification de la santé de l'API"""
+     # REBUILD FORCE - $(date) - Clear Docker cache completely
     return {"status": "healthy", "message": "Bubble Cleaner API is running"}
 
 # ==================== ROUTES DE GESTION DES UTILISATEURS ====================
