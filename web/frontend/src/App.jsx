@@ -390,7 +390,11 @@ function App() {
         {/* Logo et quotas sur la même ligne */}
         <div className="logo-quota-container">
           <div className="logo-container">
-            <img src="/logo-bubble-hack.png" alt="Logo Bubble Hack" className="logo-bubble-hack" />
+            <img 
+              src={darkMode ? "/logo-bubble-hack-dark.png" : "/logo-bubble-hack-light.png"} 
+              alt="Logo Bubble Hack" 
+              className="logo-bubble-hack" 
+            />
           </div>
           {/* Affichage des quotas à côté du logo quand connecté */}
           {user && authService.isAuthenticated() && (

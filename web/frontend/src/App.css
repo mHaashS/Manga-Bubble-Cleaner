@@ -841,7 +841,7 @@ body.dark-mode, html.dark-mode {
   height: 120px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 4px 24px 0 rgba(0, 48, 255, 0.10), 0 1.5px 8px 0 rgba(0, 174, 255, 0.10);
+  box-shadow: 0 4px 24px 0 rgba(0, 48, 255, 0.40), 0 1.5px 8px 0 rgba(0, 174, 255, 0.40);
   object-fit: cover;
   padding: 12px;
   transition: transform 0.25s cubic-bezier(.4,2,.6,1), box-shadow 0.25s;
