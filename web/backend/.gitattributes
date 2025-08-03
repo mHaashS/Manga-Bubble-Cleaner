@@ -1,0 +1,2 @@
+*.pth filter=lfs diff=lfs merge=lfs -text
+models_ai/*.pth filter=lfs diff=lfs merge=lfs -text
