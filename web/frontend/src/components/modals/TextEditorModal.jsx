@@ -3,6 +3,30 @@ import { reinsertText } from '../../services/api';
 import { wrapText, calculateSmartFontSize } from '../../utils/canvasUtils';
 import { base64ToBlob } from '../../utils/fileUtils';
 
+// Configuration des polices disponibles
+const AVAILABLE_FONTS = [
+  { 
+    name: 'Anime Ace', 
+    file: 'animeace2_reg.ttf',
+    displayName: 'Anime Ace (défaut)'
+  },
+  { 
+    name: 'CC Wild Words Roman', 
+    file: 'CC Wild Words Roman.ttf',
+    displayName: 'CC Wild Words Roman'
+  },
+  { 
+    name: 'DJB Almost Perfect', 
+    file: 'DJB Almost Perfect.ttf',
+    displayName: 'DJB Almost Perfect'
+  },
+  { 
+    name: 'Manga Temple', 
+    file: 'Manga Temple.ttf',
+    displayName: 'Manga Temple'
+  }
+];
+
 const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   // === ÉTATS ===
   const [currentBubbleIdx, setCurrentBubbleIdx] = useState(0);
@@ -11,8 +35,42 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   const [editImageSize, setEditImageSize] = useState({width: 0, height: 0});
   const [editCleanedUrl, setEditCleanedUrl] = useState(null);
   const [initialAdjustmentDone, setInitialAdjustmentDone] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   
   const canvasRef = useRef(null);
+
+  // === CHARGEMENT DES POLICES ===
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        const fontPromises = AVAILABLE_FONTS.map(async (font) => {
+          try {
+            // Encoder le nom de fichier pour gérer les espaces dans les URLs
+            const encodedFileName = encodeURIComponent(font.file);
+            const fontFace = new FontFace(font.name, `url(/fonts/${encodedFileName})`);
+            const loadedFont = await fontFace.load();
+            document.fonts.add(loadedFont);
+            console.log(`Police chargée avec succès: ${font.name}`);
+            return font;
+          } catch (error) {
+            console.warn(`Impossible de charger la police: ${font.name}`, error);
+            return null;
+          }
+        });
+        
+        await Promise.all(fontPromises);
+        setFontsLoaded(true);
+        console.log('Toutes les polices ont été chargées');
+      } catch (error) {
+        console.error('Erreur lors du chargement des polices:', error);
+        setFontsLoaded(true); // Continuer même si certaines polices échouent
+      }
+    };
+
+    if (isOpen) {
+      loadFonts();
+    }
+  }, [isOpen]);
 
   // === INITIALISATION ===
   useEffect(() => {
@@ -21,10 +79,11 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
       setCurrentBubbleIdx(0);
       const bubbles = img.bubbles ? img.bubbles.map(b => ({...b})) : [];
       
-      // S'assurer que toutes les bulles ont une taille de police valide (14 par défaut)
+      // S'assurer que toutes les bulles ont une taille de police et une police valides
       const normalizedBubbles = bubbles.map(bubble => ({
         ...bubble,
-        fontSize: bubble.fontSize || 14
+        fontSize: bubble.fontSize || 14,
+        fontFamily: bubble.fontFamily || 'Anime Ace' // Police par défaut
       }));
       
       setEditBubbles(normalizedBubbles);
@@ -56,6 +115,12 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   const handleFontSizeChange = (val) => {
     const newBubbles = [...editBubbles];
     newBubbles[currentBubbleIdx].fontSize = parseInt(val, 10);
+    setEditBubbles(newBubbles);
+  };
+
+  const handleFontFamilyChange = (fontFamily) => {
+    const newBubbles = [...editBubbles];
+    newBubbles[currentBubbleIdx].fontFamily = fontFamily;
     setEditBubbles(newBubbles);
   };
 
@@ -107,7 +172,15 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
   const saveEditModal = async () => {
     if (imageIndex !== null) {
       const newImages = [...images];
-      newImages[imageIndex].bubbles = editBubbles.map(b => ({...b}));
+      
+      // S'assurer que les informations de police sont conservées dans l'état des images
+      const updatedBubbles = editBubbles.map(bubble => ({
+        ...bubble,
+        fontFamily: bubble.fontFamily || 'Anime Ace',
+        fontSize: bubble.fontSize || 14
+      }));
+      
+      newImages[imageIndex].bubbles = updatedBubbles;
       
       try {
         let cleanedBlob = newImages[imageIndex].cleanedBlob;
@@ -128,11 +201,24 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
           return;
         }
         
-        const data = await reinsertText(cleanedBlob, editBubbles.map(b => ({
+        // Préparer les données avec les informations de police
+        const bubblesWithFonts = updatedBubbles.map(b => ({
           ...b,
           translated_text: b.translatedText,
-          ocr_text: b.ocrText
+          ocr_text: b.ocrText,
+          font_family: b.fontFamily || 'Anime Ace',
+          font_size: b.fontSize || 14
+        }));
+        
+        console.log('Données envoyées au backend:', bubblesWithFonts);
+        console.log('Détail des polices envoyées:', bubblesWithFonts.map(b => ({
+          index: b.index,
+          translated_text: b.translated_text,
+          font_family: b.font_family,
+          font_size: b.font_size
         })));
+        
+        const data = await reinsertText(cleanedBlob, bubblesWithFonts);
         
         const finalUrl = `data:image/png;base64,${data.image_base64}`;
         
@@ -142,6 +228,11 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
           url: finalUrl, 
           blob: base64ToBlob(data.image_base64)
         };
+        
+        // S'assurer que les informations de police sont conservées dans l'état final
+        newImages[imageIndex].bubbles = updatedBubbles;
+        
+        console.log('Images mises à jour avec les polices:', newImages[imageIndex].bubbles);
         
         onSave(newImages);
         onClose();
@@ -156,78 +247,48 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
 
   // === EFFET POUR DESSINER LE CANVAS ===
   useEffect(() => {
-    if (!isOpen || !editCleanedUrl || !editBubbles.length) return;
+    if (!isOpen || !editCleanedUrl || !editBubbles.length || !fontsLoaded) return;
     
-    // Forcer le chargement de la police avant de dessiner
-    const testFont = new FontFace('Anime Ace', 'url(./fonts/animeace2_reg.ttf)');
-    testFont.load().then(() => {
-      document.fonts.add(testFont);
+    const img = new window.Image();
+    img.onload = function() {
+      const canvas = canvasRef.current;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
       
-      const img = new window.Image();
-      img.onload = function() {
-        const canvas = canvasRef.current;
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+      // Dessiner toutes les bulles (pour voir le rendu global)
+      editBubbles.forEach((bulle, idx) => {
+        const x = (bulle.x_min + bulle.x_max) / 2;
+        const y = (bulle.y_min + bulle.y_max) / 2;
+        // Utiliser les mêmes marges que dans calculateOptimalFontSize (10%)
+        const bubbleWidth = bulle.x_max - bulle.x_min;
+        const marginX = bubbleWidth * 0.1;
+        const maxWidth = bubbleWidth - (2 * marginX);
+        const fontSize = bulle.fontSize || 14;
+        const fontFamily = bulle.fontFamily || 'Anime Ace';
         
-        // Dessiner toutes les bulles (pour voir le rendu global)
-        editBubbles.forEach((bulle, idx) => {
-          const x = (bulle.x_min + bulle.x_max) / 2;
-          const y = (bulle.y_min + bulle.y_max) / 2;
-          // Utiliser les mêmes marges que dans calculateOptimalFontSize (10%)
-          const bubbleWidth = bulle.x_max - bulle.x_min;
-          const marginX = bubbleWidth * 0.1;
-          const maxWidth = bubbleWidth - (2 * marginX);
-          const fontSize = bulle.fontSize || 14;
-          const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
-          const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
-          wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
-        });
+        // Vérifier si la police est disponible avec plus de détails
+        const isFontAvailable = document.fonts.check(`12px "${fontFamily}"`);
+        const finalFontFamily = isFontAvailable ? fontFamily : 'Anime Ace';
         
-        // Dessiner un rectangle autour de la bulle sélectionnée
-        const bulle = editBubbles[currentBubbleIdx];
-        ctx.save();
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(bulle.x_min, bulle.y_min, bulle.x_max-bulle.x_min, bulle.y_max-bulle.y_min);
-        ctx.restore();
-      };
-      img.src = editCleanedUrl;
-    }).catch(() => {
-      // Fallback si la police ne peut pas être chargée
-      const img = new window.Image();
-      img.onload = function() {
-        const canvas = canvasRef.current;
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+        const font = `${fontSize}px "${finalFontFamily}", Arial, sans-serif`;
+        const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
         
-        // Dessiner toutes les bulles (pour voir le rendu global)
-        editBubbles.forEach((bulle, idx) => {
-          const x = (bulle.x_min + bulle.x_max) / 2;
-          const y = (bulle.y_min + bulle.y_max) / 2;
-          const bubbleWidth = bulle.x_max - bulle.x_min;
-          const marginX = bubbleWidth * 0.1;
-          const maxWidth = bubbleWidth - (2 * marginX);
-          const fontSize = bulle.fontSize || 14;
-          const font = `${fontSize}px 'Anime Ace', Arial, sans-serif`;
-          const color = idx === currentBubbleIdx ? '#7c3aed' : '#111';
-          wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
-        });
-        
-        // Dessiner un rectangle autour de la bulle sélectionnée
-        const bulle = editBubbles[currentBubbleIdx];
-        ctx.save();
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(bulle.x_min, bulle.y_min, bulle.x_max-bulle.x_min, bulle.y_max-bulle.y_min);
-        ctx.restore();
-      };
-      img.src = editCleanedUrl;
-    });
-  }, [isOpen, editCleanedUrl, editBubbles, currentBubbleIdx]);
+        console.log(`Rendu bulle ${idx}: police "${finalFontFamily}" (demandée: "${fontFamily}", disponible: ${isFontAvailable})`);
+        wrapText(ctx, bulle.translatedText, x, y, maxWidth, fontSize * 1.15, color, font);
+      });
+      
+      // Dessiner un rectangle autour de la bulle sélectionnée
+      const bulle = editBubbles[currentBubbleIdx];
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(bulle.x_min, bulle.y_min, bulle.x_max-bulle.x_min, bulle.y_max-bulle.y_min);
+      ctx.restore();
+    };
+    img.src = editCleanedUrl;
+  }, [isOpen, editCleanedUrl, editBubbles, currentBubbleIdx, fontsLoaded]);
 
   // === RENDU ===
   if (!isOpen) return null;
@@ -318,10 +379,48 @@ const TextEditorModal = ({ isOpen, imageIndex, images, onClose, onSave }) => {
             rows={6}
             style={{ width: '90%', borderRadius: 8, border: '1.5px solid #a78bfa', padding: 10, fontSize: 16, resize: 'vertical', marginBottom: 8 }}
           />
+          
+          {/* Contrôles de police */}
+          <div style={{marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8}}>
+            <label style={{color: '#6366f1', fontWeight: 500, minWidth: 80}}>Police :</label>
+            <select 
+              value={editBubbles[currentBubbleIdx]?.fontFamily || 'Anime Ace'} 
+              onChange={e => handleFontFamilyChange(e.target.value)}
+              style={{
+                flex: 1,
+                borderRadius: 6, 
+                border: '1.5px solid #a78bfa', 
+                padding: 6, 
+                fontSize: 14,
+                backgroundColor: '#ffffff'
+              }}
+            >
+              {AVAILABLE_FONTS.map(font => (
+                <option key={font.name} value={font.name}>
+                  {font.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           <div style={{marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8}}>
             <label style={{color: '#6366f1', fontWeight: 500}}>Taille police :</label>
-            <input type="number" min={8} max={80} value={editBubbles[currentBubbleIdx]?.fontSize || 14} onChange={e => handleFontSizeChange(e.target.value)} style={{width: 70, borderRadius: 6, border: '1.5px solid #a78bfa', padding: 4, fontSize: 15}} />
+            <input 
+              type="number" 
+              min={8} 
+              max={80} 
+              value={editBubbles[currentBubbleIdx]?.fontSize || 14} 
+              onChange={e => handleFontSizeChange(e.target.value)} 
+              style={{
+                width: 70, 
+                borderRadius: 6, 
+                border: '1.5px solid #a78bfa', 
+                padding: 4, 
+                fontSize: 15
+              }} 
+            />
           </div>
+          
           <div style={{display: 'flex', gap: 12, marginTop: 16}}>
             <button className="btn-outline" style={{flex: 1, padding: '12px 16px', fontSize: 15, fontWeight: 500}} onClick={goToPrevBubble} disabled={currentBubbleIdx === 0}>◀ Précédente</button>
             <button className="btn-outline" style={{flex: 1, padding: '12px 16px', fontSize: 15, fontWeight: 500}} onClick={goToNextBubble} disabled={currentBubbleIdx === editBubbles.length - 1}>Suivante ▶</button>

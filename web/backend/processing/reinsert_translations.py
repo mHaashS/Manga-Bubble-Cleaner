@@ -17,8 +17,26 @@ if not hasattr(Image, "Resampling"):
 # Configuration du logging
 logger = logging.getLogger(__name__)
 
-def find_font():
+def find_font(font_family=None):
     """Trouve une police disponible sur le système"""
+    # Mapping des noms de police vers les fichiers
+    font_mapping = {
+        'Anime Ace': 'fonts/animeace2_reg.ttf',
+        'CC Wild Words Roman': 'fonts/CC Wild Words Roman.ttf',
+        'DJB Almost Perfect': 'fonts/DJB Almost Perfect.ttf',
+        'Manga Temple': 'fonts/Manga Temple.ttf'
+    }
+    
+    # Si une police spécifique est demandée, essayer de la trouver
+    if font_family and font_family in font_mapping:
+        font_path = font_mapping[font_family]
+        if os.path.exists(font_path):
+            logger.info(f"Police spécifique trouvée: {font_family} -> {font_path}")
+            return font_path
+        else:
+            logger.warning(f"Police spécifique non trouvée: {font_path}")
+    
+    # Fallback vers les polices par défaut
     font_paths = [
         "fonts/animeace2_reg.ttf",  # Regular en premier
         "fonts/animeace2_bld.ttf",  # Bold en second
@@ -88,7 +106,7 @@ def draw_text_on_image(image, bubble_data, text):
         available_height = box_height - (2 * margin_y)
         
         # Charger la police
-        font_path = find_font()
+        font_path = find_font(bubble_data.get('font_family'))
         if font_path:
             logger.info(f"OK: Police chargee: {os.path.basename(font_path)}")
         else:
@@ -96,6 +114,14 @@ def draw_text_on_image(image, bubble_data, text):
         
         # Taille de police par défaut (gérer les deux formats)
         font_size = bubble_data.get('font_size', bubble_data.get('fontSize', 16))
+        
+        # Si aucune taille spécifique n'est fournie, calculer automatiquement
+        if not bubble_data.get('font_size') and not bubble_data.get('fontSize'):
+            # Calculer la taille de police basée sur la taille de la bulle
+            box_width = x_max - x_min
+            box_height = y_max - y_min
+            font_size = min(box_width // 10, box_height // 2, 72)  # Limiter à 72pt max
+            font_size = max(font_size, 8)  # Minimum 8pt
         
         # Charger la police
         try:
@@ -152,18 +178,14 @@ def draw_translated_text(image, translations):
             x_max = int(bubble_data.get('x_max', 0))
             y_max = int(bubble_data.get('y_max', 0))
             
-            # Calculer la taille de police basée sur la taille de la bulle
-            bubble_width = x_max - x_min
-            bubble_height = y_max - y_min
-            font_size = min(bubble_width // 10, bubble_height // 2, 72)  # Limiter à 72pt max
-            font_size = max(font_size, 8)  # Minimum 8pt
-            
-            # Charger la police
-            font_path = find_font()
-            if font_path:
-                logger.info(f"OK: Police chargee: {os.path.basename(font_path)}")
-            else:
-                logger.warning("ATTENTION: Police non trouvee, utilisation de la police par defaut")
+            # Utiliser la taille de police spécifiée par le frontend ou calculer automatiquement
+            font_size = bubble_data.get('font_size', bubble_data.get('fontSize'))
+            if not font_size:
+                # Calculer la taille de police basée sur la taille de la bulle
+                bubble_width = x_max - x_min
+                bubble_height = y_max - y_min
+                font_size = min(bubble_width // 10, bubble_height // 2, 72)  # Limiter à 72pt max
+                font_size = max(font_size, 8)  # Minimum 8pt
             
             # Dessiner le texte
             image = draw_text_on_image(image, bubble_data, translated_text)

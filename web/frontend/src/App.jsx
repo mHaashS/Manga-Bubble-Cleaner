@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { processImage } from './services/api';
-import { validateFile, createZipFile } from './utils/fileUtils';
+import { validateFile, createZipFile, createDownloadLink } from './utils/fileUtils';
 import ThemeToggle from './components/ui/ThemeToggle';
 import ProgressBar from './components/ui/ProgressBar';
 import ImagePreviewModal from './components/modals/ImagePreviewModal';
