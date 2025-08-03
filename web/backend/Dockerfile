@@ -43,4 +43,17 @@ COPY . .
 EXPOSE $PORT
 
 # Commande de démarrage
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Script de démarrage qui gère correctement la variable PORT
+RUN echo '#!/bin/bash\n\
+echo "Starting application..."\n\
+echo "PORT variable: $PORT"\n\
+if [ -z "$PORT" ]; then\n\
+    echo "PORT not set, using default 8000"\n\
+    PORT=8000\n\
+fi\n\
+echo "Starting uvicorn on port $PORT"\n\
+uvicorn main:app --host 0.0.0.0 --port $PORT\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Commande de démarrage
+CMD ["/app/start.sh"]
