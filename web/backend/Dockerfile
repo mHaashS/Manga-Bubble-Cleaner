@@ -43,16 +43,4 @@ COPY . .
 EXPOSE 8000
 
 # Script de démarrage corrigé
-RUN echo '#!/bin/bash' > /app/start.sh && \
-    echo 'echo "Starting application..."' >> /app/start.sh && \
-    echo 'echo "PORT variable: $PORT"' >> /app/start.sh && \
-    echo 'if [ -z "$PORT" ]; then' >> /app/start.sh && \
-    echo '    echo "PORT not set, using default 8000"' >> /app/start.sh && \
-    echo '    PORT=8000' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
-    echo 'echo "Starting uvicorn on port $PORT"' >> /app/start.sh && \
-    echo 'exec uvicorn main:app --host 0.0.0.0 --port $PORT' >> /app/start.sh && \
-    chmod +x /app/start.sh
-
-# Commande de démarrage
-CMD ["/app/start.sh"]
+CMD uvicorn main:app --host 0.0.0.0 --port 8000
