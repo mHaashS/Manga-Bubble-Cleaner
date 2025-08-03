@@ -33,9 +33,13 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Bubble Cleaner API", version="1.0.0")
 
 # Autoriser le frontend local (à adapter en prod)
+
+origins = ["http://localhost:3000",
+        "https://www.bubblehack.fr"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

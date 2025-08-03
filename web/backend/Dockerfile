@@ -1,4 +1,4 @@
-# Dockerfile optimisé pour Render
+# Dockerfile optimisé pour Railway
 FROM python:3.10-slim
 
 # Variables d'environnement pour optimiser le build
@@ -10,7 +10,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 # Dossier de travail
 WORKDIR /app
 
-# Installation des dépendances système en une seule couche (ajout des dépendances OpenCV)
+# Installation des dépendances système
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
@@ -29,9 +29,9 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip
 
 # Copie des requirements
-COPY requirements.txt .
+COPY requirements-essential.txt requirements.txt
 
-# Installation des dépendances avec optimisations maximales
+# Installation des dépendances avec optimisations
 RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
     && pip install --no-cache-dir --no-deps -r requirements.txt \
     && pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf
@@ -39,8 +39,8 @@ RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.
 # Copie du code
 COPY . .
 
-# Exposition du port (Render utilise $PORT)
-EXPOSE 10000
+# Exposition du port (Railway utilise $PORT)
+EXPOSE $PORT
 
-# Commande de démarrage adaptée pour Render
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}
+# Commande de démarrage
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT

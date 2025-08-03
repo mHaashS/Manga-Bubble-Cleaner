@@ -28,7 +28,6 @@ torchvision==0.20.1
 torchaudio==2.5.1
 scikit-image==0.25.2
 scipy==1.15.3
-git+https://github.com/facebookresearch/detectron2.git
 
 # Utilitaires
 python-bidi==0.6.6
