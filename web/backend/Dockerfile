@@ -32,7 +32,7 @@ RUN pip install --upgrade pip
 COPY requirements-railway.txt requirements.txt
 
 # Installation des dépendances avec optimisations
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
+RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
     && pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf
 
