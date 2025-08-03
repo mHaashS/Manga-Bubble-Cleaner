@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip
 
 # Copie des requirements
-COPY requirements-essential.txt requirements.txt
+#COPY requirements-essential.txt requirements.txt
 
 # Installation des dépendances avec optimisations
 RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
