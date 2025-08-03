@@ -16,7 +16,8 @@ colorama==0.4.6
 contourpy==1.3.2
 cryptography==45.0.5
 cycler==0.12.1
-detectron2==0.6
+# detectron2 doit être installé via git, pas via pip
+# git+https://github.com/facebookresearch/detectron2.git
 distro==1.9.0
 dnspython==2.7.0
 easyocr==1.7.0
@@ -68,7 +69,7 @@ pycocotools==2.0.10
 pycparser==2.22
 pydantic==2.5.0
 pydantic-settings==2.2.1
-pydantic_core==2.14.1
+# pydantic_core sera installé automatiquement avec la bonne version par pydantic
 pyparsing==3.2.3
 pytesseract==0.3.13
 python-bidi==0.6.6
