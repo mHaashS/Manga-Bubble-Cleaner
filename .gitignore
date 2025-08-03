@@ -30,7 +30,6 @@ web/backend/services/__pycache__/
 web/backend/utils/__pycache__/
 
 # Modèles IA (gros fichiers)
-*.pth
 *.pt
 *.onnx
 *.h5
@@ -137,7 +136,6 @@ Thumbs.db
 /manga_screenshots/
 /output/
 /models/
-/models_ai/
 
 # Fichiers de test temporaires (maintenant dans tests/)
 # Note: Les tests sont maintenant organisés dans web/backend/tests/
