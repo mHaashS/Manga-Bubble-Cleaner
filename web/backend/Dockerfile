@@ -28,8 +28,8 @@ RUN apt-get update && apt-get install -y \
 # Mise à jour de pip
 RUN pip install --upgrade pip
 
-# Copie des requirements
-COPY requirements.txt .
+# Copie des requirements pour Railway (sans dépendances Windows)
+COPY requirements-railway.txt requirements.txt
 
 # Installation des dépendances avec optimisations
 RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
