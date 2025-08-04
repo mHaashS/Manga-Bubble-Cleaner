@@ -4,5 +4,7 @@ nixPkgs = ["git", "gcc"]
 [phases.install]
 cmds = [
     "chmod +x buildpack.sh",
-    "./buildpack.sh"
+    "./buildpack.sh",
+    "chmod +x postinstall.sh",
+    "./postinstall.sh"
 ] 

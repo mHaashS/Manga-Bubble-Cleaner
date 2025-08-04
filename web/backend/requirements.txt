@@ -1,3 +1,6 @@
+# Dépendances système (installées via buildpack.sh)
+# git, build-essential, python3-dev, libgl1-mesa-glx, python3-distutils, libglib2.0-0, libsm6, libxext6, libxrender1, libgomp1, tesseract-ocr, libtesseract-dev
+
 # Copie du contenu de requirements-railway.txt
 absl-py==2.3.1
 aiosmtplib==2.0.2
