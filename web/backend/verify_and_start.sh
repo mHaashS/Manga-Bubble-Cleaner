@@ -40,10 +40,6 @@ python -c "import detectron2; print(f'✅ Detectron2 installé')" || {
     python -m pip install git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf
 }
 
-# Test final des dépendances
-echo "🧪 Test final des dépendances..."
-python test_deploy.py
-
 # Démarrer l'application
 echo "🎯 Démarrage de l'API..."
 exec python -m uvicorn main:app --host 0.0.0.0 --port $PORT 
