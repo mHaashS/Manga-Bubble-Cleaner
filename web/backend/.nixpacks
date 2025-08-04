@@ -1,5 +1,9 @@
+# Configuration Nixpacks pour Railway
+# Utilise les valeurs par défaut de Nixpacks pour Python
+
+# Variables d'environnement
 [phases.setup]
-nixPkgs = ["git", "build-essential", "python3-dev", "libgl1-mesa-glx", "python3-distutils", "libglib2.0-0", "libsm6", "libxext6", "libxrender1", "libgomp1", "tesseract-ocr", "libtesseract-dev"]
+nixPkgs = ["git", "gcc", "opencv"]
 
 [phases.install]
 cmds = [

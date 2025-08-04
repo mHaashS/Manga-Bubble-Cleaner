@@ -6,7 +6,6 @@ echo "Installation des dépendances système..."
 # Installation des packages système nécessaires
 apt-get update
 apt-get install -y \
-    git \
     build-essential \
     python3-dev \
     libgl1-mesa-glx \
@@ -17,7 +16,9 @@ apt-get install -y \
     libxrender1 \
     libgomp1 \
     tesseract-ocr \
-    libtesseract-dev
+    libtesseract-dev \
+    pkg-config \
+    cmake
 
 # Nettoyage
 apt-get clean
