@@ -1,3 +1,4 @@
+# Copie du contenu de requirements-railway.txt
 absl-py==2.3.1
 aiosmtplib==2.0.2
 alembic==1.13.1
@@ -95,9 +96,6 @@ tensorboard-data-server==0.7.2
 termcolor==3.1.0
 tifffile==2025.5.10
 tomli==2.2.1
-torch==2.5.1
-torchaudio==2.5.1
-torchvision==0.20.1
 tqdm==4.67.1
 typing_extensions==4.14.1
 urllib3==2.5.0

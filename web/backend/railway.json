@@ -1,12 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "web/backend/Dockerfile",
-    "buildTimeout": 1800
+    "builder": "NIXPACKS",
+    "buildCommand": "chmod +x buildpack.sh && ./buildpack.sh && pip install -r requirements-railway.txt && pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 && pip install git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf"
   },
   "deploy": {
-    "startCommand": "uvicorn main:app --host 0.0.0.0 --port 8000",
+    "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
