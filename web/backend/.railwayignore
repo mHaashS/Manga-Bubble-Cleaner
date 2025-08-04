@@ -1,0 +1,33 @@
+# Ignorer les fichiers Docker pour forcer l'utilisation de Nixpacks
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Ignorer les fichiers de développement
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Ignorer les fichiers de données temporaires
+data/
+logs/
+output/ 
