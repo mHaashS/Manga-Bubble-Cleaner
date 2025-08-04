@@ -96,6 +96,15 @@ app.add_middleware(
 
 
 
+@app.get("/")
+async def root():
+    """Route racine de l'API"""
+    return {
+        "message": "Bubble Cleaner API",
+        "version": "1.0.0",
+        "status": "running"
+    }
+
 @app.post("/register", response_model=schemas.User)
 
 async def register(user: schemas.UserCreate, db: Session = Depends(get_db)):

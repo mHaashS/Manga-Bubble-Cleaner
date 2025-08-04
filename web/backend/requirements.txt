@@ -8,7 +8,7 @@ alembic==1.13.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
 anyio==3.7.1
-bcrypt==4.3.0
+bcrypt==4.0.1
 black==25.1.0
 blinker==1.9.0
 certifi==2025.7.14
@@ -80,7 +80,7 @@ pytesseract==0.3.13
 python-bidi==0.6.6
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.0
-python-jose==3.3.0
+PyJWT==2.8.0
 python-multipart==0.0.6
 # pywin32==311  # Spécifique à Windows, retiré pour Railway (Linux)
 PyYAML==6.0.2
