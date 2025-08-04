@@ -16,12 +16,31 @@ PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"))
-cfg.MODEL.WEIGHTS = os.path.join(PROJECT_DIR, "models_ai", "model_final.pth")
+
+# Essayer de charger le modèle local, sinon utiliser le modèle par défaut
+model_path = os.path.join(PROJECT_DIR, "models_ai", "model_final.pth")
+if os.path.exists(model_path):
+    try:
+        cfg.MODEL.WEIGHTS = model_path
+        logger.info(f"Chargement du modèle local: {model_path}")
+    except Exception as e:
+        logger.warning(f"Erreur lors du chargement du modèle local: {e}")
+        cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+        logger.info("Utilisation du modèle par défaut Detectron2")
+else:
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+    logger.info("Modèle local non trouvé, utilisation du modèle par défaut Detectron2")
+
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
 cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3  # bubble, floating_text, narration_box
 cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-predictor = DefaultPredictor(cfg)
+try:
+    predictor = DefaultPredictor(cfg)
+    logger.info("Modèle Detectron2 chargé avec succès")
+except Exception as e:
+    logger.error(f"Erreur lors du chargement du modèle: {e}")
+    predictor = None
 
 # === PARAMÈTRES DE NETTOYAGE ===
 FILL_COLOR = (255, 255, 255)  # Blanc
