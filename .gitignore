@@ -17,10 +17,7 @@ __pycache__/
 
 # FastAPI/Backend - Structure organisée
 web/backend/output/
-web/backend/models/
-#web/backend/models_ai/
 web/backend/data/
-web/backend/fonts/
 web/backend/.env
 
 # Nouveaux dossiers organisés
