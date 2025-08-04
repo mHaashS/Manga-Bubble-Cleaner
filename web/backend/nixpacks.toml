@@ -5,9 +5,9 @@ nixPkgs = ["git", "gcc", "python310", "python310Packages.pip", "python310Package
 cmds = [
     "chmod +x buildpack.sh",
     "./buildpack.sh",
-    "pip install --break-system-packages torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1",
-    "pip install --break-system-packages detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/index.html",
-    "pip install --break-system-packages -r requirements.txt"
+    "pip install --break-system-packages -r requirements-torch.txt",
+    "pip install --break-system-packages -r requirements.txt",
+    "pip install --break-system-packages -r requirements-detectron.txt"
 ]
 
 [start]
