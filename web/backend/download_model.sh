@@ -6,7 +6,7 @@ echo "📥 Téléchargement du modèle AI..."
 # Créer le dossier models_ai s'il n'existe pas
 mkdir -p models_ai
 
-# URL du modèle Google Drive (format direct download)
+# URL du modèle Google Drive
 MODEL_URL="https://drive.google.com/uc?export=download&id=1o39PdWVxOrUzMbW6LsB8G4tz1maMH5Ib"
 MODEL_PATH="models_ai/model_final.pth"
 
