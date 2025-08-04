@@ -3,6 +3,18 @@
 # Script de démarrage pour Railway
 echo "🚀 Démarrage de l'application Bubble Cleaner..."
 
+# Vérifier que Python est disponible
+if ! command -v python &> /dev/null; then
+    echo "❌ Python n'est pas installé"
+    exit 1
+fi
+
+# Vérifier que uvicorn est installé
+if ! python -c "import uvicorn" &> /dev/null; then
+    echo "⚠️  Installation de uvicorn..."
+    pip install uvicorn
+fi
+
 # Vérifier que les dépendances système sont installées
 if [ ! -f "/usr/bin/tesseract" ]; then
     echo "⚠️  Installation des dépendances système..."
@@ -24,4 +36,4 @@ python -c "import detectron2; print(f'✅ Detectron2 v{detectron2.__version__} i
 
 # Démarrer l'application
 echo "🎯 Démarrage de l'API..."
-exec uvicorn main:app --host 0.0.0.0 --port $PORT 
+exec python -m uvicorn main:app --host 0.0.0.0 --port $PORT 
