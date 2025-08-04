@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["git", "gcc"]
+
+[phases.install]
+cmds = [
+    "chmod +x buildpack.sh",
+    "./buildpack.sh"
+] 

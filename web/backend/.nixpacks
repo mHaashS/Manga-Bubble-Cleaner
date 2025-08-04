@@ -1,18 +1,2 @@
 # Configuration Nixpacks pour Railway
-# Utilise les valeurs par défaut de Nixpacks pour Python
-
-# Variables d'environnement
-[phases.setup]
-nixPkgs = ["git", "gcc", "opencv"]
-
-[phases.install]
-cmds = [
-    "chmod +x buildpack.sh",
-    "./buildpack.sh",
-    "pip install -r requirements.txt",
-    "pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1",
-    "pip install git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf"
-]
-
-[start]
-cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT" 
+# Laisser Nixpacks détecter automatiquement Python 
