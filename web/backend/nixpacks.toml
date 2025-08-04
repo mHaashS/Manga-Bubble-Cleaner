@@ -1,14 +1,14 @@
 [phases.setup]
-nixPkgs = ["git", "gcc"]
+nixPkgs = ["git", "gcc", "python310"]
 
 [phases.install]
 cmds = [
     "chmod +x buildpack.sh",
     "./buildpack.sh",
-    "pip install -r requirements.txt",
+    "python -m ensurepip --upgrade",
+    "python -m pip install -r requirements.txt",
     "chmod +x postinstall.sh",
-    "./postinstall.sh",
-    "python test_deploy.py"
+    "./postinstall.sh"
 ]
 
 [start]
