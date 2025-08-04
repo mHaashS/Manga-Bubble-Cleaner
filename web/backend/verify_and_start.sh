@@ -42,4 +42,5 @@ python -c "import detectron2; print(f'✅ Detectron2 installé')" || {
 
 # Démarrer l'application
 echo "🎯 Démarrage de l'API..."
+echo "🔧 Port utilisé: $PORT"
 exec python -m uvicorn main:app --host 0.0.0.0 --port $PORT 

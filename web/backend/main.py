@@ -238,62 +238,47 @@ async def get_user_quotas(current_user: schemas.User = Depends(get_current_activ
 
 
 @app.post("/process")
-
 async def process_image(
-
     file: UploadFile = File(...),
-
     current_user: schemas.User = Depends(get_current_active_user),
-
     db: Session = Depends(get_db)
-
 ):
-
     """Traiter une image avec authentification et vérification des quotas"""
-
     start_time = time.time()
-
     
-
+    print(f"🖼️  Début du traitement pour l'utilisateur: {current_user.email}")
+    print(f"📁 Fichier reçu: {file.filename}, taille: {file.size} bytes")
+    
     # Vérifier et incrémenter les quotas
-
     quota_status = crud.check_and_increment_quotas(db, current_user.id)
-
     if not quota_status["can_process"]:
-
         raise HTTPException(status_code=429, detail=quota_status["message"])
-
     
-
     # Traitement de l'image
-
     image_bytes = await file.read()
-
-    result_bytes, bubbles, cleaned_base64 = process_image_pipeline_with_bubbles(image_bytes)
-
-    image_base64 = base64.b64encode(result_bytes).decode('utf-8')
-
+    print(f"📊 Image lue: {len(image_bytes)} bytes")
     
-
-    # Mettre à jour les statistiques
-
-    processing_time = time.time() - start_time
-
-    crud.update_usage_stats(db, current_user.id, 1, processing_time)
-
-    
-
-    return JSONResponse(content={
-
-        "image_base64": image_base64,
-
-        "bubbles": bubbles,
-
-        "cleaned_base64": cleaned_base64,
-
-        "quota_status": quota_status
-
-    })
+    try:
+        result_bytes, bubbles, cleaned_base64 = process_image_pipeline_with_bubbles(image_bytes)
+        print(f"✅ Traitement terminé: {len(result_bytes)} bytes, {len(bubbles)} bulles détectées")
+        
+        image_base64 = base64.b64encode(result_bytes).decode('utf-8')
+        
+        # Mettre à jour les statistiques
+        processing_time = time.time() - start_time
+        crud.update_usage_stats(db, current_user.id, 1, processing_time)
+        
+        return JSONResponse(content={
+            "image_base64": image_base64,
+            "bubbles": bubbles,
+            "cleaned_base64": cleaned_base64,
+            "quota_status": quota_status
+        })
+    except Exception as e:
+        print(f"❌ Erreur lors du traitement: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur lors du traitement: {str(e)}")
 
 
 

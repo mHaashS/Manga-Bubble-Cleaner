@@ -23,13 +23,17 @@ if os.path.exists(model_path):
     try:
         cfg.MODEL.WEIGHTS = model_path
         logger.info(f"Chargement du modèle local: {model_path}")
+        print(f"✅ Modèle local chargé: {model_path}")
     except Exception as e:
         logger.warning(f"Erreur lors du chargement du modèle local: {e}")
+        print(f"⚠️  Erreur modèle local: {e}")
         cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
         logger.info("Utilisation du modèle par défaut Detectron2")
+        print("🔄 Utilisation du modèle par défaut Detectron2")
 else:
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
     logger.info("Modèle local non trouvé, utilisation du modèle par défaut Detectron2")
+    print("🔄 Modèle local non trouvé, utilisation du modèle par défaut")
 
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
 cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3  # bubble, floating_text, narration_box
@@ -38,8 +42,10 @@ cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 try:
     predictor = DefaultPredictor(cfg)
     logger.info("Modèle Detectron2 chargé avec succès")
+    print("✅ Modèle Detectron2 chargé avec succès")
 except Exception as e:
     logger.error(f"Erreur lors du chargement du modèle: {e}")
+    print(f"❌ Erreur chargement modèle: {e}")
     predictor = None
 
 # === PARAMÈTRES DE NETTOYAGE ===
