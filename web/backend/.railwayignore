@@ -30,4 +30,8 @@ coverage.xml
 # Ignorer les fichiers de données temporaires
 data/
 logs/
-output/ 
+output/
+
+# Ignorer les modèles AI (ils seront téléchargés depuis Google Drive)
+models_ai/
+*.pth 

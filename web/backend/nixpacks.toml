@@ -1,10 +1,12 @@
 [phases.setup]
-nixPkgs = ["git", "gcc", "python310", "python310Packages.pip", "python310Packages.setuptools"]
+nixPkgs = ["git", "gcc", "python310", "python310Packages.pip", "python310Packages.setuptools", "curl"]
 
 [phases.install]
 cmds = [
     "chmod +x buildpack.sh",
     "./buildpack.sh",
+    "chmod +x download_model.sh",
+    "./download_model.sh",
     "pip install --break-system-packages -r requirements-torch.txt",
     "pip install --break-system-packages -r requirements.txt",
     "pip install --break-system-packages --no-build-isolation git+https://github.com/facebookresearch/detectron2.git@b15f64ec4429e23a148972175a0207c5a9ab84cf"
