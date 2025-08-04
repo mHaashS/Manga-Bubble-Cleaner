@@ -5,7 +5,7 @@ nixPkgs = ["git", "gcc", "python310", "python310Packages.pip", "python310Package
 cmds = [
     "chmod +x buildpack.sh",
     "./buildpack.sh",
-    "pip install -r requirements.txt",
+    "pip install --break-system-packages -r requirements.txt",
     "chmod +x postinstall.sh",
     "./postinstall.sh"
 ]
